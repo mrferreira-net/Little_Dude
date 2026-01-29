@@ -1,28 +1,60 @@
-# Example file showing a basic pygame "game loop"
 import pygame
+import sys
 
-# pygame setup
+# Initialize pygame
 pygame.init()
-screen = pygame.display.set_mode((640, 480))
-clock = pygame.time.Clock()
-running = True
 
-while running:
-    # poll for events
-    # pygame.QUIT event means the user clicked X to close your window
+# Window setup
+WIDTH, HEIGHT = 640, 480
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Move the Sprite")
+
+# Clock for controlling frame rate
+clock = pygame.time.Clock()
+
+# Load or create a sprite (here we use a simple rectangle)
+player_size = 50
+player_color = (0, 200, 255)
+player_x = WIDTH // 2
+player_y = HEIGHT - player_size
+player_speed = 5
+player_jumpDuration = 0
+player_jump = False
+
+# Game loop
+while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+            pygame.quit()
+            sys.exit()
 
-    # fill the screen with a color to wipe away anything from last frame
-    screen.fill("purple")
-    pygame.draw.circle(screen, "yellow", (320, 240), 50)
+    # Key handling
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and player_x > 0:
+        player_x -= player_speed
+    if keys[pygame.K_RIGHT] and player_x < WIDTH - player_size:
+        player_x += player_speed
+    if keys[pygame.K_UP] and player_jumpDuration == 0 and player_y >= HEIGHT - player_size:
+        player_jumpDuration = 20
+    if keys[pygame.K_DOWN] and player_y < HEIGHT - player_size:
+        player_y += player_speed
 
-    # RENDER YOUR GAME HERE
+    if player_jumpDuration > 0 and player_y > 0:
+        player_y -= player_speed
+        player_jumpDuration -= 1
 
-    # flip() the display to put your work on screen
+    # Gravity
+    if player_y < HEIGHT - player_size and player_jumpDuration == 0:
+        player_y += 2
+
+    # Fill screen
+    screen.fill((30, 30, 30))
+
+    # Draw sprite
+    pygame.draw.rect(screen, player_color, (player_x, player_y, player_size, player_size))
+
+    # Update display
     pygame.display.flip()
 
-    clock.tick(60)  # limits FPS to 60
-
-pygame.quit()
+    # Cap FPS
+    clock.tick(60)
