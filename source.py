@@ -7,7 +7,7 @@ pygame.init()
 # Window setup
 WIDTH, HEIGHT = 640, 480
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Move the Sprite")
+pygame.display.set_caption("Little Dude")
 
 # Clock for controlling frame rate
 clock = pygame.time.Clock()
