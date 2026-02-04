@@ -1,9 +1,7 @@
 import ctypes
 import pygame
 import sys
-
-myappid = 'mycompany.myproduct.subproduct.version' 
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+import random
 
 # Initialize pygame
 pygame.init()
@@ -16,8 +14,13 @@ little_dude_image = pygame.image.load("Data/Sprites/little_dude.png").convert_al
 little_dude_rect = little_dude_image.get_rect()
 pygame.display.set_icon(little_dude_image)
 
+
 # Clock for controlling frame rate
 clock = pygame.time.Clock()
+
+### Utility Functions
+def floorChange(vert_direction):
+    b = 0
 
 # Game objects
 class player:
@@ -29,16 +32,59 @@ class player:
     jumpDuration = 0
     jump = False
 class platform:
-    width = 100
-    height = 20
-    color = (100, 50, 0)
-    x = WIDTH // 2 - width // 2
-    y = HEIGHT - 100
-    
+    def __init__(self, x, y, width=100, height=20):
+        self.width = width
+        self.height = height
+        self.color = (100, 50, 0)
+        self.x = x
+        self.y = y
+class floor:
+    def __init__(self):
+        self.platforms = []
+class sprite:
+    b=0
 
-
-# Game loop
+### Initial Game Variables
 direction = "right"
+floors = []
+for floor_idx in range(10):
+    new_floor = floor()
+    # Create 4-6 platforms per floor with random spacing
+    num_platforms = 10
+    last_x = random.randint(0, WIDTH - 100)
+    for plat_idx in range(num_platforms):
+        # Random x position (ensure platform stays on screen)
+        deviation = 100
+        x = 0
+        leftOrRight = -1
+        left_deviation = last_x - deviation
+        right_deviation = last_x + 100 + deviation
+
+        if left_deviation >= 0 and right_deviation <= WIDTH - 100:
+            leftOrRight = random.randint(0,1)
+        elif left_deviation >= 0:
+            leftOrRight = 0
+        else:
+            leftOrRight = 1
+
+        if leftOrRight == 0:
+            lower_bound = max(0, last_x - deviation)
+            upper_bound = last_x - 100
+            x = random.randint(lower_bound, upper_bound)
+        elif leftOrRight == 1:
+            lower_bound = last_x + 100
+            upper_bound = min(WIDTH - 100, last_x + 100 + deviation) 
+            x = random.randint(lower_bound, upper_bound)
+
+        # Space platforms vertically, with some randomness
+        y = HEIGHT - 20 - ((plat_idx + 1)  * 60)
+        new_platform = platform(x, y)
+        new_floor.platforms.append(new_platform)
+        last_x = x
+    floors.append(new_floor)
+floor_Index = 0
+
+### Main game loop
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -83,7 +129,9 @@ while True:
     screen.blit(little_dude_image, (player.x, player.y))
 
     # Draw platforms
-    pygame.draw.rect(screen, platform.color, (platform.x, platform.y, platform.width, platform.height))
+    for platform_ in floors[floor_Index].platforms:
+        pygame.draw.rect(screen, platform_.color, 
+                         (platform_.x, platform_.y, platform_.width, platform_.height))
 
     # Update display
     pygame.display.flip()
