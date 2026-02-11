@@ -18,6 +18,7 @@ pygame.display.set_icon(little_dude_image)
 clock = pygame.time.Clock()
 
 ### Utility Functions
+# Generates a curved path using a quadratic Bezier curve
 def curved_path(p0, p1, control, steps=50):
     path = [] 
     for t in np.linspace(0, 1, steps): 
@@ -26,9 +27,20 @@ def curved_path(p0, p1, control, steps=50):
         path.append([x, y]) 
     return np.array(path)
 
+# Check for collision between two rectangles
+def is_colliding(rect1, rect2):
+    return (
+        rect1.x < rect2.x + rect2.width and
+        rect1.x + rect1.width > rect2.x and
+        rect1.y < rect2.y + rect2.height and
+        rect1.y + rect1.height > rect2.y
+    )
+
 # Game objects
 class player:
     def __init__(self):
+        self.width = 50
+        self.height = 50
         self.size = 50
         self.color = (0, 0, 0)
         self.x = WIDTH // 2
@@ -39,25 +51,28 @@ class player:
         self.visible = False
         self.moving = False
         self.stayDuration = 30
-        self.target_platform = None
         self.path = None
         self.path_index = 0
 class platform:
-    def __init__(self, x, y, width=100, height=20):
-        self.width = width
-        self.height = height
+    def __init__(self, x, y):
+        self.width = 100
+        self.height = 20
         self.color = (100, 50, 0)
         self.x = x
         self.y = y
+        self.direction = "right"
 class floor:
     def __init__(self):
         self.platforms = []
 
 ### Initial Game Variables
 fire_guy = player()
+fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.7
+fire_guy.width, fire_guy.height, fire_guy.size = 25, 25, 25
+numOfPoints = int(100*(1/fire_guy.speed))
 player1 = player()
 player1.visible = True
-fire_guy_image = pygame.image.load("Data/Sprites/fire_guy.png").convert_alpha()
+fire_guy_image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
 num_platforms = 6
 floors = []
 for floor_idx in range(10):
@@ -98,6 +113,7 @@ for floor_idx in range(10):
 floor_Index = 0
 player_height_limit = player1.y
 direction = "right"
+shifting_platforms = []
 
 ### Main game loop
 while True:
@@ -105,16 +121,19 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-
-    # Key handling
+        # Key handling for key down events
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP or event.key == pygame.K_w:
+                if player1.jumpDuration == 0 and player1.y >= player_height_limit:
+                    player1.jumpDuration = 20
+                
+    # Key handling for hold down keys
     lastLoc = player1.x
     keys = pygame.key.get_pressed()
     if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and player1.x > 0:
         player1.x -= player1.speed
     if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and player1.x < WIDTH - player1.size:
         player1.x += player1.speed
-    if (keys[pygame.K_UP] or keys[pygame.K_w]) and player1.jumpDuration == 0 and player1.y >= player_height_limit:
-        player1.jumpDuration = 20
     if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and player1.y < HEIGHT - player1.size:
         player1.y += player1.speed
 
@@ -125,15 +144,53 @@ while True:
 
     # New floor transition
     if player1.y < 0:
+        shifting_platforms = []
+        fire_guy.path = None
+        fire_guy.path_index = 0
+        fire_guy.moving = False
+
+        # Changes floor index and resets player vertical position
         if floor_Index < len(floors) - 1:
             floor_Index += 1
         player1.y = HEIGHT - player1.size
+
+        # Chooses where fire guy spawns
         if floor_Index > 0:
-            platformIndex = random.randint(0, num_platforms - 1)
+            platformIndex = random.randint(1, num_platforms - 1)
             platform_ = floors[floor_Index].platforms[platformIndex]
             fire_guy.x = platform_.x + platform_.width // 2 - fire_guy.size // 2
             fire_guy.y = platform_.y - fire_guy.size
             fire_guy.visible = True
+
+        # Chooses which platforms will shift
+        for i in range(floor_Index - 1):
+            selected_platform_index = random.randint(0, num_platforms - 1)
+            while selected_platform_index in shifting_platforms:
+                selected_platform_index = random.randint(0, num_platforms - 1)
+            shifting_platforms.append(selected_platform_index)
+
+    # Fire guy changing platforms
+    if fire_guy.visible and fire_guy.moving is False and fire_guy.stayDuration <= 0:
+        fire_guy.moving = True
+        i = random.randint(0, num_platforms - 1)
+        while i in shifting_platforms:
+            i = random.randint(0, num_platforms - 1)
+        target = floors[floor_Index].platforms[i]
+        p0 = (fire_guy.x, fire_guy.y)
+        p1 = (target.x + target.width // 2 - fire_guy.size // 2, target.y - fire_guy.size)
+        fire_guy.path = curved_path(p0, p1, [100, 0], steps=numOfPoints)
+        fire_guy.path_index = 0
+    elif fire_guy.visible and fire_guy.moving is False:
+        fire_guy.stayDuration -= 1
+    if fire_guy.moving:
+        if fire_guy.path_index < len(fire_guy.path):
+            fire_guy.x, fire_guy.y = fire_guy.path[fire_guy.path_index]
+
+        if fire_guy.x == fire_guy.path[-1][0] and fire_guy.y == fire_guy.path[-1][1]:
+              fire_guy.moving = False
+              fire_guy.stayDuration = 20
+        
+        fire_guy.path_index += 1
 
     # Check for landing on platforms
     if player1.jumpDuration == 0:
@@ -156,26 +213,26 @@ while True:
         else:
             player1.y += 2
 
-    # Fire guy changing platforms
-    if fire_guy.visible and fire_guy.moving is False and fire_guy.stayDuration <= 0:
-        fire_guy.moving = True
-        fire_guy.target_platform = random.choice(floors[floor_Index].platforms)
-        target = fire_guy.target_platform
-        p0 = (fire_guy.x, fire_guy.y)
-        p1 = (target.x + target.width // 2 - fire_guy.size // 2, target.y - fire_guy.size)
-        fire_guy.path = curved_path(p0, p1, [320, 0], steps=50)
-        fire_guy.path_index = 0
-    elif fire_guy.visible and fire_guy.moving is False:
-        fire_guy.stayDuration -= 1
-    if fire_guy.moving:
-        if fire_guy.path_index < len(fire_guy.path):
-            fire_guy.x, fire_guy.y = fire_guy.path[fire_guy.path_index]
+    # Fire guy collision with player
+    if fire_guy.visible:
+        if is_colliding(player1, fire_guy):
+            fire_guy.visible = False
+            fire_guy.x, fire_guy.y = -100, -100
+            floor_Index = 0
+            player1.x, player1.y = WIDTH // 2, HEIGHT - player1.size
+            shifting_platforms = []
 
-        if fire_guy.x == fire_guy.path[-1][0] and fire_guy.y == fire_guy.path[-1][1]:
-              fire_guy.moving = False
-              fire_guy.stayDuration = 20
-        
-        fire_guy.path_index += 1
+    # Shift platforms at higher floors
+    for i, platform_ in enumerate(floors[floor_Index].platforms):
+        if i in shifting_platforms:
+            if platform_.direction == "right":
+                platform_.x += 1
+                if platform_.x + platform_.width >= WIDTH:
+                    platform_.direction = "left"
+            else:
+                platform_.x -= 1
+                if platform_.x <= 0:
+                    platform_.direction = "right"
 
     # Direction tracking
     if player1.x > lastLoc and direction != "right":
