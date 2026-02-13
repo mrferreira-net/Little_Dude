@@ -43,8 +43,8 @@ class player:
         self.height = 50
         self.size = 50
         self.color = (0, 0, 0)
-        self.x = WIDTH // 2
-        self.y = HEIGHT - self.size
+        self.x = (WIDTH - self.size) // 2
+        self.y = HEIGHT - self.size - 10
         self.speed = 5
         self.jumpDuration = 0
         self.jump = False
@@ -77,8 +77,13 @@ num_platforms = 6
 floors = []
 for floor_idx in range(10):
     new_floor = floor()
+    new_floor.platforms.append(platform(0, 0))
+    new_floor.platforms[0].color = (158, 153, 146)
+    new_floor.platforms[0].width = 300
+    new_floor.platforms[0].x = (WIDTH - 300) // 2 
+    new_floor.platforms[0].y = HEIGHT - 10
+
     # Create 4-6 platforms per floor with random spacing
-    
     last_x = random.randint(0, WIDTH - 100)
     for plat_idx in range(num_platforms):
         # Random x position (ensure platform stays on screen)
@@ -105,7 +110,7 @@ for floor_idx in range(10):
             x = random.randint(lower_bound, upper_bound)
 
         # Space platforms vertically
-        y = HEIGHT - 20 - ((plat_idx + 1)  * 60)
+        y = HEIGHT - 40 - ((plat_idx + 1)  * 60)
         new_platform = platform(x, y)
         new_floor.platforms.append(new_platform)
         last_x = x
@@ -113,7 +118,7 @@ for floor_idx in range(10):
 floor_Index = 0
 player_height_limit = player1.y
 direction = "right"
-shifting_platforms = []
+shifting_platforms = [0]
 
 ### Main game loop
 while True:
@@ -125,7 +130,7 @@ while True:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP or event.key == pygame.K_w:
                 if player1.jumpDuration == 0 and player1.y >= player_height_limit:
-                    player1.jumpDuration = 20
+                    player1.jumpDuration = 18
                 
     # Key handling for hold down keys
     lastLoc = player1.x
@@ -144,7 +149,7 @@ while True:
 
     # New floor transition
     if player1.y < 0:
-        shifting_platforms = []
+        shifting_platforms = [0]
         fire_guy.path = None
         fire_guy.path_index = 0
         fire_guy.moving = False
@@ -152,7 +157,7 @@ while True:
         # Changes floor index and resets player vertical position
         if floor_Index < len(floors) - 1:
             floor_Index += 1
-        player1.y = HEIGHT - player1.size
+        player1.y = HEIGHT - player1.size - 10
 
         # Chooses where fire guy spawns
         if floor_Index > 0:
@@ -164,17 +169,17 @@ while True:
 
         # Chooses which platforms will shift
         for i in range(floor_Index - 1):
-            selected_platform_index = random.randint(0, num_platforms - 1)
+            selected_platform_index = random.randint(1, num_platforms - 1)
             while selected_platform_index in shifting_platforms:
-                selected_platform_index = random.randint(0, num_platforms - 1)
+                selected_platform_index = random.randint(1, num_platforms - 1)
             shifting_platforms.append(selected_platform_index)
 
     # Fire guy changing platforms
     if fire_guy.visible and fire_guy.moving is False and fire_guy.stayDuration <= 0:
         fire_guy.moving = True
-        i = random.randint(0, num_platforms - 1)
+        i = random.randint(1, num_platforms - 1)
         while i in shifting_platforms:
-            i = random.randint(0, num_platforms - 1)
+            i = random.randint(1, num_platforms - 1)
         target = floors[floor_Index].platforms[i]
         p0 = (fire_guy.x, fire_guy.y)
         p1 = (target.x + target.width // 2 - fire_guy.size // 2, target.y - fire_guy.size)
@@ -219,8 +224,14 @@ while True:
             fire_guy.visible = False
             fire_guy.x, fire_guy.y = -100, -100
             floor_Index = 0
-            player1.x, player1.y = WIDTH // 2, HEIGHT - player1.size
-            shifting_platforms = []
+            player1.x, player1.y = (WIDTH - player1.size) // 2, HEIGHT - player1.size
+            shifting_platforms = [0]
+
+    # Lava
+    if player1.y >= HEIGHT - player1.size:
+        floor_Index = 0
+        player1.x, player1.y = (WIDTH - player1.size) // 2, HEIGHT - player1.size
+        shifting_platforms = [0]
 
     # Shift platforms at higher floors
     for i, platform_ in enumerate(floors[floor_Index].platforms):
@@ -242,6 +253,9 @@ while True:
         direction = "left"
         little_dude_image = pygame.transform.flip(little_dude_image, True, False)
 
+    
+        
+
 ### Draw everything on the screen
     # Fill screen
     screen.fill((190, 190, 255))
@@ -249,6 +263,8 @@ while True:
     # Draw player
     screen.blit(little_dude_image, (player1.x, player1.y))
     
+    pygame.draw.rect(screen, (255, 0, 0), (200, 150, 100, 50), 0)
+
     # Draw platforms``
     for platform_ in floors[floor_Index].platforms:
         pygame.draw.rect(screen, platform_.color, 
