@@ -110,7 +110,7 @@ for floor_idx in range(10):
             x = random.randint(lower_bound, upper_bound)
 
         # Space platforms vertically
-        y = HEIGHT - 40 - ((plat_idx + 1)  * 60)
+        y = HEIGHT - 30 - ((plat_idx + 1)  * 60)
         new_platform = platform(x, y)
         new_floor.platforms.append(new_platform)
         last_x = x
@@ -153,11 +153,20 @@ while True:
         fire_guy.path = None
         fire_guy.path_index = 0
         fire_guy.moving = False
+        floor_platform = floors[floor_Index].platforms[0]
 
         # Changes floor index and resets player vertical position
         if floor_Index < len(floors) - 1:
             floor_Index += 1
         player1.y = HEIGHT - player1.size - 10
+
+        # Centers platform on player
+        if player1.x <= floor_platform.width:
+            floors[floor_Index].platforms[0].x = 0
+        elif player1.x >= WIDTH - floor_platform.width:
+            floors[floor_Index].platforms[0].x = WIDTH - floor_platform.width 
+        else:
+            floors[floor_Index].platforms[0].x = player1.x - (floor_platform.width - player1.width) // 2
 
         # Chooses where fire guy spawns
         if floor_Index > 0:
@@ -213,10 +222,10 @@ while True:
 
     # Gravity
     if player1.y < player_height_limit and player1.jumpDuration == 0:
-        if player_height_limit - player1.y < 2:
+        if player_height_limit - player1.y < 3:
             player1.y += 1
         else:
-            player1.y += 2
+            player1.y += 3
 
     # Fire guy collision with player
     if fire_guy.visible:
@@ -230,7 +239,9 @@ while True:
     # Lava
     if player1.y >= HEIGHT - player1.size:
         floor_Index = 0
-        player1.x, player1.y = (WIDTH - player1.size) // 2, HEIGHT - player1.size
+        fire_guy.visible = False
+        fire_guy.x, fire_guy.y = -100, -100
+        player1.x, player1.y = floors[0].platforms[0].x + (floors[0].platforms[0].width - player1.size) // 2, floors[0].platforms[0].y - player1.size
         shifting_platforms = [0]
 
     # Shift platforms at higher floors
@@ -263,7 +274,7 @@ while True:
     # Draw player
     screen.blit(little_dude_image, (player1.x, player1.y))
     
-    pygame.draw.rect(screen, (255, 0, 0), (200, 150, 100, 50), 0)
+    pygame.draw.rect(screen, (240, 105, 22), (0, HEIGHT - 6, WIDTH, 10), 0)
 
     # Draw platforms``
     for platform_ in floors[floor_Index].platforms:
