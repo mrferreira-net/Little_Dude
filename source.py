@@ -11,8 +11,6 @@ pygame.init()
 WIDTH, HEIGHT = 640, 480
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Little Dude")
-little_dude_image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
-pygame.display.set_icon(little_dude_image)
 
 # Clock for controlling frame rate
 clock = pygame.time.Clock()
@@ -37,7 +35,7 @@ def is_colliding(rect1, rect2):
     )
 
 # Game objects
-class player:
+class sprite:
     def __init__(self):
         self.width = 50
         self.height = 50
@@ -53,6 +51,7 @@ class player:
         self.stayDuration = 30
         self.path = None
         self.path_index = 0
+        self.image = None
 class platform:
     def __init__(self, x, y):
         self.width = 100
@@ -66,13 +65,17 @@ class floor:
         self.platforms = []
 
 ### Initial Game Variables
-fire_guy = player()
+fire_guy = sprite()
 fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.7
 fire_guy.width, fire_guy.height, fire_guy.size = 25, 25, 25
+fire_guy.image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
+little_dude = sprite()
+little_dude.visible = True
+little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
+water = sprite()
+water.width, water.height, water.size = 25, 25, 25
+water.image = pygame.image.load("Data/Sprites/water.png").convert_alpha()
 numOfPoints = int(100*(1/fire_guy.speed))
-player1 = player()
-player1.visible = True
-fire_guy_image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
 num_platforms = 6
 floors = []
 for floor_idx in range(100):
@@ -114,7 +117,7 @@ for floor_idx in range(100):
         last_x = x
     floors.append(new_floor)
 floor_Index = 0
-player_height_limit = player1.y
+player_height_limit = little_dude.y
 direction = "right"
 shifting_platforms = []
 
@@ -127,28 +130,28 @@ while True:
         # Key handling for key down events
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP or event.key == pygame.K_w:
-                if player1.jumpDuration == 0 and player1.y >= player_height_limit:
-                    player1.jumpDuration = 18
+                if little_dude.jumpDuration == 0 and little_dude.y >= player_height_limit:
+                    little_dude.jumpDuration = 18
             # Debugging teleportation
             if event.key == pygame.K_t:
-                player1.y = -10
+                little_dude.y = -10
     # Key handling for hold down keys
-    lastLoc = player1.x
+    lastLoc = little_dude.x
     keys = pygame.key.get_pressed()
-    if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and player1.x > 0:
-        player1.x -= player1.speed
-    if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and player1.x < WIDTH - player1.size:
-        player1.x += player1.speed
-    if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and player1.y < HEIGHT - player1.size - 10:
-        player1.y += player1.speed
+    if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and little_dude.x > 0:
+        little_dude.x -= little_dude.speed
+    if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and little_dude.x < WIDTH - little_dude.size:
+        little_dude.x += little_dude.speed
+    if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and little_dude.y < HEIGHT - little_dude.size - 10:
+        little_dude.y += little_dude.speed
 
     # Jumping
-    if player1.jumpDuration > 0:
-        player1.y -= player1.speed
-        player1.jumpDuration -= 1
+    if little_dude.jumpDuration > 0:
+        little_dude.y -= little_dude.speed
+        little_dude.jumpDuration -= 1
 
     # New floor transition
-    if player1.y < 0:
+    if little_dude.y < 0:
         shifting_platforms = [0]
         fire_guy.path = None
         fire_guy.path_index = 0
@@ -158,16 +161,16 @@ while True:
         # Changes floor index and resets player vertical position
         if floor_Index < len(floors) - 1:
             floor_Index += 1
-        player1.y = HEIGHT - player1.size - 10
+        little_dude.y = HEIGHT - little_dude.size - 10
 
         # Centers platform on player
         floor_platform = floors[floor_Index].platforms[0]
-        if player1.x <= floor_platform.width / 2:
+        if little_dude.x <= floor_platform.width / 2:
             floors[floor_Index].platforms[0].x = 0
-        elif player1.x >= WIDTH - floor_platform.width / 2:
+        elif little_dude.x >= WIDTH - floor_platform.width / 2:
             floors[floor_Index].platforms[0].x = WIDTH - floor_platform.width 
         else:
-            floors[floor_Index].platforms[0].x = player1.x - (floor_platform.width - player1.width) // 2
+            floors[floor_Index].platforms[0].x = little_dude.x - (floor_platform.width - little_dude.width) // 2
 
         # Chooses which platforms will shift
         range_ = 0
@@ -190,6 +193,9 @@ while True:
             fire_guy.x = platform_.x + platform_.width // 2 - fire_guy.size // 2
             fire_guy.y = platform_.y - fire_guy.size
             fire_guy.visible = True
+            water.x = fire_guy.x
+            water.y = fire_guy.y
+            water.visible = True
 
     # Fire guy changing platforms
     if fire_guy.visible and fire_guy.moving is False and fire_guy.stayDuration <= 0:
@@ -215,42 +221,42 @@ while True:
         fire_guy.path_index += 1
 
     # Check for landing on platforms
-    if player1.jumpDuration == 0:
+    if little_dude.jumpDuration == 0:
         for platform_ in floors[floor_Index].platforms:
             if (
-                ((player1.x + player1.size) >= platform_.x) and 
-                (player1.x <= (platform_.x + platform_.width)) and 
-                ((player1.y + player1.size) <= platform_.y) and 
-                (player1.y >= (platform_.y - 80))
+                ((little_dude.x + little_dude.size) >= platform_.x) and 
+                (little_dude.x <= (platform_.x + platform_.width)) and 
+                ((little_dude.y + little_dude.size) <= platform_.y) and 
+                (little_dude.y >= (platform_.y - 80))
                 ):
-                player_height_limit = platform_.y - player1.size
+                player_height_limit = platform_.y - little_dude.size
                 break
             else:
-                player_height_limit = HEIGHT - player1.size
+                player_height_limit = HEIGHT - little_dude.size
 
     # Gravity
-    if player1.y < player_height_limit and player1.jumpDuration == 0:
-        if player_height_limit - player1.y < 3:
-            player1.y += 1
+    if little_dude.y < player_height_limit and little_dude.jumpDuration == 0:
+        if player_height_limit - little_dude.y < 3:
+            little_dude.y += 1
         else:
-            player1.y += 3
+            little_dude.y += 3
 
     # Fire guy collision with player
     if fire_guy.visible:
-        if is_colliding(player1, fire_guy):
+        if is_colliding(little_dude, fire_guy):
             fire_guy.visible = False
             fire_guy.x, fire_guy.y = -100, -100
             floor_Index = 0
-            player1.x, player1.y = (WIDTH - player1.size) // 2, HEIGHT - player1.size
-            shifting_platforms = [0]
+            little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, HEIGHT - little_dude.size
+            shifting_platforms = []
 
     # Lava
-    if player1.y >= HEIGHT - player1.size:
+    if little_dude.y >= HEIGHT - little_dude.size:
         floor_Index = 0
         fire_guy.visible = False
         fire_guy.x, fire_guy.y = -100, -100
-        player1.x, player1.y = floors[0].platforms[0].x + (floors[0].platforms[0].width - player1.size) // 2, floors[0].platforms[0].y - player1.size
-        shifting_platforms = [0]
+        little_dude.x, little_dude.y = floors[0].platforms[0].x + (floors[0].platforms[0].width - little_dude.size) // 2, floors[0].platforms[0].y - little_dude.size
+        shifting_platforms = []
 
     # Shift platforms at higher floors
     for i, platform_ in enumerate(floors[floor_Index].platforms):
@@ -265,12 +271,12 @@ while True:
                     platform_.direction = "right"
 
     # Direction tracking
-    if player1.x > lastLoc and direction != "right":
+    if little_dude.x > lastLoc and direction != "right":
         direction = "right"
-        little_dude_image = pygame.transform.flip(little_dude_image, True, False)
-    elif player1.x < lastLoc and direction != "left":
+        little_dude.image = pygame.transform.flip(little_dude.image, True, False)
+    elif little_dude.x < lastLoc and direction != "left":
         direction = "left"
-        little_dude_image = pygame.transform.flip(little_dude_image, True, False)
+        little_dude.image = pygame.transform.flip(little_dude.image, True, False)
 
     # Render floor number text
     font_size = 40
@@ -286,7 +292,7 @@ while True:
     screen.fill((190, 190, 255))
 
     # Draw player
-    screen.blit(little_dude_image, (player1.x, player1.y))
+    screen.blit(little_dude.image, (little_dude.x, little_dude.y))
     
     # Draw floor number
     screen.blit(text, text_rect)
@@ -301,7 +307,10 @@ while True:
         
     # Draw fire guy
     if fire_guy.visible:
-        screen.blit(fire_guy_image, (fire_guy.x, fire_guy.y))
+        screen.blit(fire_guy.image, (fire_guy.x, fire_guy.y))
+
+    if water.visible:
+        screen.blit(water.image, (water.x, water.y))
 
     # Update display
     pygame.display.flip()
