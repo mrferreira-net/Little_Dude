@@ -37,9 +37,9 @@ def is_colliding(rect1, rect2):
 # Game objects
 class sprite:
     def __init__(self):
-        self.width = 50
-        self.height = 50
-        self.size = 50
+        self.width = 25
+        self.height = 25
+        self.size = 25
         self.color = (0, 0, 0)
         self.x = (WIDTH - self.size) // 2
         self.y = HEIGHT - self.size - 10
@@ -67,14 +67,16 @@ class floor:
 ### Initial Game Variables
 fire_guy = sprite()
 fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.7
-fire_guy.width, fire_guy.height, fire_guy.size = 25, 25, 25
 fire_guy.image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
 little_dude = sprite()
 little_dude.visible = True
+little_dude.width, little_dude.height, little_dude.size = 50, 50, 50
 little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
-water = sprite()
-water.width, water.height, water.size = 25, 25, 25
-water.image = pygame.image.load("Data/Sprites/water.png").convert_alpha()
+smoke = sprite()
+smoke.image = pygame.image.load("Data/Sprites/smoke.png").convert_alpha()
+bolt = sprite()
+bolt.width, bolt.height, bolt.size = 10, 15, None
+bolt.image = pygame.image.load("Data/Sprites/bolt.png").convert_alpha()
 numOfPoints = int(100*(1/fire_guy.speed))
 num_platforms = 6
 floors = []
@@ -154,6 +156,7 @@ while True:
     if little_dude.y < 0:
         shifting_platforms = [0]
         fire_guy.path = None
+        smoke.visible = False
         fire_guy.path_index = 0
         fire_guy.moving = False
         fire_guy.stayDuration = 30
@@ -186,16 +189,13 @@ while True:
 
         # Chooses where fire guy spawns
         if floor_Index > 0:
-            platformIndex = random.randint(1, num_platforms)
+            platformIndex = random.randint(2, num_platforms)
             while platformIndex in shifting_platforms:
-                platformIndex = random.randint(1, num_platforms)
+                platformIndex = random.randint(2, num_platforms)
             platform_ = floors[floor_Index].platforms[platformIndex]
             fire_guy.x = platform_.x + platform_.width // 2 - fire_guy.size // 2
             fire_guy.y = platform_.y - fire_guy.size
             fire_guy.visible = True
-            water.x = fire_guy.x
-            water.y = fire_guy.y
-            water.visible = True
 
     # Fire guy changing platforms
     if fire_guy.visible and fire_guy.moving is False and fire_guy.stayDuration <= 0:
@@ -205,6 +205,9 @@ while True:
             i = random.randint(1, num_platforms - 1)
         target = floors[floor_Index].platforms[i]
         p0 = (fire_guy.x, fire_guy.y)
+        smoke.x = fire_guy.x
+        smoke.y = fire_guy.y
+        smoke.visible = True
         p1 = (target.x + target.width // 2 - fire_guy.size // 2, target.y - fire_guy.size)
         fire_guy.path = curved_path(p0, p1, [100, 0], steps=numOfPoints)
         fire_guy.path_index = 0
@@ -217,6 +220,7 @@ while True:
         if fire_guy.x == fire_guy.path[-1][0] and fire_guy.y == fire_guy.path[-1][1]:
               fire_guy.moving = False
               fire_guy.stayDuration = 20
+              smoke.visible = False
         
         fire_guy.path_index += 1
 
@@ -245,15 +249,42 @@ while True:
     if fire_guy.visible:
         if is_colliding(little_dude, fire_guy):
             fire_guy.visible = False
+            smoke.visible = False
             fire_guy.x, fire_guy.y = -100, -100
             floor_Index = 0
             little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, HEIGHT - little_dude.size
             shifting_platforms = []
 
+    # Player collides with smoke sprite
+    if smoke.visible:
+        if is_colliding(little_dude, smoke):
+            smoke.visible = False
+            bolt.visible = True
+            bolt.x = smoke.x
+            bolt.y = smoke.y
+
+    # Cast bolt towards fire guy
+    if bolt.visible:
+        if bolt.x > fire_guy.x:
+            bolt.x -= 2
+        elif bolt.x < fire_guy.x:
+            bolt.x += 2
+        if bolt.y > fire_guy.y:
+            bolt.y -= 2
+        elif bolt.y < fire_guy.y:
+            bolt.y += 2
+
+        if is_colliding(bolt, fire_guy):
+            fire_guy.visible = False
+            smoke.visible = False
+            bolt.visible = False
+            fire_guy.x, fire_guy.y = -100, -100
+
     # Lava
     if little_dude.y >= HEIGHT - little_dude.size:
         floor_Index = 0
         fire_guy.visible = False
+        smoke.visible = False
         fire_guy.x, fire_guy.y = -100, -100
         little_dude.x, little_dude.y = floors[0].platforms[0].x + (floors[0].platforms[0].width - little_dude.size) // 2, floors[0].platforms[0].y - little_dude.size
         shifting_platforms = []
@@ -309,8 +340,13 @@ while True:
     if fire_guy.visible:
         screen.blit(fire_guy.image, (fire_guy.x, fire_guy.y))
 
-    if water.visible:
-        screen.blit(water.image, (water.x, water.y))
+    # Draw smoke
+    if smoke.visible:
+        screen.blit(smoke.image, (smoke.x, smoke.y))
+
+    # Draw bolt    
+    if bolt.visible:
+        screen.blit(bolt.image, (bolt.x, bolt.y))
 
     # Update display
     pygame.display.flip()
