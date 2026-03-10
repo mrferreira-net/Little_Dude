@@ -34,6 +34,23 @@ def is_colliding(rect1, rect2):
         rect1.y + rect1.height > rect2.y
     )
 
+def destroy_Platform(platform_):
+            platform_.visible = False
+            if little_dude.current_Platform == platform_:
+                little_dude.height_limit = HEIGHT - little_dude.size
+                little_dude.current_Platform = None
+
+def reset():
+    global floor_Index, shifting_platforms
+    floor_Index = 0
+    fire_guy.visible = False
+    smoke.visible = False
+    fire_guy.x, fire_guy.y = -100, -100
+    little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, HEIGHT - little_dude.size
+    shifting_platforms = []
+    for platforms in floors[0].platforms:
+        platforms.visible = True
+
 # Game objects
 class sprite:
     def __init__(self):
@@ -52,6 +69,9 @@ class sprite:
         self.path = None
         self.path_index = 0
         self.image = None
+        self.last_Platform = None
+        self.current_Platform = None
+        self.height_limit = self.y
 class platform:
     def __init__(self, x, y):
         self.width = 100
@@ -60,68 +80,75 @@ class platform:
         self.x = x
         self.y = y
         self.direction = "right"
+        self.visible = True
 class floor:
     def __init__(self):
         self.platforms = []
 
 ### Initial Game Variables
-fire_guy = sprite()
-fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.7
-fire_guy.image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
-little_dude = sprite()
-little_dude.visible = True
-little_dude.width, little_dude.height, little_dude.size = 50, 50, 50
-little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
-smoke = sprite()
-smoke.image = pygame.image.load("Data/Sprites/smoke.png").convert_alpha()
-bolt = sprite()
-bolt.width, bolt.height, bolt.size = 10, 15, None
-bolt.image = pygame.image.load("Data/Sprites/bolt.png").convert_alpha()
-numOfPoints = int(100*(1/fire_guy.speed))
-num_platforms = 6
-floors = []
-for floor_idx in range(100):
-    new_floor = floor()
-    new_floor.platforms.append(platform(0, 0))
-    new_floor.platforms[0].color = (158, 153, 146)
-    new_floor.platforms[0].width = 300
-    new_floor.platforms[0].x = (WIDTH - 300) // 2 
-    new_floor.platforms[0].y = HEIGHT - 10
+def initiate_vars():
+    global fire_guy, little_dude, smoke
+    global bolt, numOfPoints, num_platforms, floors, floor_Index
+    global direction, shifting_platforms
+    fire_guy = sprite()
+    fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.7
+    fire_guy.image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
+    little_dude = sprite()
+    little_dude.visible = True
+    little_dude.width, little_dude.height, little_dude.size = 50, 50, 50
+    little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
+    smoke = sprite()
+    smoke.image = pygame.image.load("Data/Sprites/smoke.png").convert_alpha()
+    bolt = sprite()
+    bolt.width, bolt.height, bolt.size = 10, 15, None
+    bolt.image = pygame.image.load("Data/Sprites/bolt.png").convert_alpha()
+    numOfPoints = int(100*(1/fire_guy.speed))
+    num_platforms = 6
+    floors = []
+    for floor_idx in range(100):
+        new_floor = floor()
+        new_floor.platforms.append(platform(0, 0))
+        new_floor.platforms[0].color = (158, 153, 146)
+        new_floor.platforms[0].width = 300
+        new_floor.platforms[0].x = (WIDTH - 300) // 2 
+        new_floor.platforms[0].y = HEIGHT - 10
 
-    # Create 4-6 platforms per floor with random spacing
-    last_x = random.randint(0, WIDTH - 100)
-    for plat_idx in range(num_platforms):
-        # Random x position (ensure platform stays on screen)
-        deviation = 150
-        x = 0
-        leftOrRight = -1
-        left_deviation = last_x - deviation
-        right_deviation = last_x + 100 + deviation
+        # Create 4-6 platforms per floor with random spacing
+        last_x = random.randint(0, WIDTH - 100)
+        for plat_idx in range(num_platforms):
+            # Random x position (ensure platform stays on screen)
+            deviation = 150
+            x = 0
+            leftOrRight = -1
+            left_deviation = last_x - deviation
+            right_deviation = last_x + 100 + deviation
 
-        if left_deviation >= 0 and right_deviation <= WIDTH - 100:
-            leftOrRight = random.randint(0,1)
-        elif left_deviation >= 0:
-            leftOrRight = 0
-        elif right_deviation <= WIDTH - 100:
-            leftOrRight = 1
+            if left_deviation >= 0 and right_deviation <= WIDTH - 100:
+                leftOrRight = random.randint(0,1)
+            elif left_deviation >= 0:
+                leftOrRight = 0
+            elif right_deviation <= WIDTH - 100:
+                leftOrRight = 1
 
-        if leftOrRight == 0:
-            lower_bound = max(0, left_deviation)
-            x = lower_bound
-        elif leftOrRight == 1:
-            upper_bound = min(WIDTH - 100, last_x + 100 + deviation) 
-            x = upper_bound
+            if leftOrRight == 0:
+                lower_bound = max(0, left_deviation)
+                x = lower_bound
+            elif leftOrRight == 1:
+                upper_bound = min(WIDTH - 100, last_x + 100 + deviation) 
+                x = upper_bound
 
-        # Space platforms vertically
-        y = HEIGHT - 30 - ((plat_idx + 1)  * 60)
-        new_platform = platform(x, y)
-        new_floor.platforms.append(new_platform)
-        last_x = x
-    floors.append(new_floor)
-floor_Index = 0
-player_height_limit = little_dude.y
-direction = "right"
-shifting_platforms = []
+            # Space platforms vertically
+            y = HEIGHT - 30 - ((plat_idx + 1)  * 60)
+            new_platform = platform(x, y)
+            new_floor.platforms.append(new_platform)
+            last_x = x
+        floors.append(new_floor)
+    floor_Index = 0
+    direction = "right"
+    shifting_platforms = []
+    little_dude.last_Platform = floors[0].platforms[0]
+    little_dude.y = floors[0].platforms[0].y - little_dude.size
+initiate_vars()
 
 ### Main game loop
 while True:
@@ -132,7 +159,7 @@ while True:
         # Key handling for key down events
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP or event.key == pygame.K_w:
-                if little_dude.jumpDuration == 0 and little_dude.y >= player_height_limit:
+                if little_dude.jumpDuration == 0 and little_dude.y >= little_dude.height_limit:
                     little_dude.jumpDuration = 18
             # Debugging teleportation
             if event.key == pygame.K_t:
@@ -231,29 +258,29 @@ while True:
                 ((little_dude.x + little_dude.size) >= platform_.x) and 
                 (little_dude.x <= (platform_.x + platform_.width)) and 
                 ((little_dude.y + little_dude.size) <= platform_.y) and 
-                (little_dude.y >= (platform_.y - 80))
+                (little_dude.y >= (platform_.y - 80)) and platform_.visible
                 ):
-                player_height_limit = platform_.y - little_dude.size
+                little_dude.height_limit = platform_.y - little_dude.size
+                little_dude.current_Platform = platform_
                 break
             else:
-                player_height_limit = HEIGHT - little_dude.size
+                little_dude.height_limit = HEIGHT - little_dude.size
 
     # Gravity
-    if little_dude.y < player_height_limit and little_dude.jumpDuration == 0:
-        if player_height_limit - little_dude.y < 3:
+    if little_dude.y < little_dude.height_limit and little_dude.jumpDuration == 0:
+        if little_dude.height_limit - little_dude.y < 3:
             little_dude.y += 1
-        else:
+        elif little_dude.height_limit - little_dude.y >= 3:
             little_dude.y += 3
+        if (little_dude.current_Platform is not little_dude.last_Platform
+            and little_dude.y == little_dude.height_limit):
+            destroy_Platform(little_dude.last_Platform)
+            little_dude.last_Platform = little_dude.current_Platform
 
     # Fire guy collision with player
     if fire_guy.visible:
         if is_colliding(little_dude, fire_guy):
-            fire_guy.visible = False
-            smoke.visible = False
-            fire_guy.x, fire_guy.y = -100, -100
-            floor_Index = 0
-            little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, HEIGHT - little_dude.size
-            shifting_platforms = []
+            reset()
 
     # Player collides with smoke sprite
     if smoke.visible:
@@ -282,12 +309,7 @@ while True:
 
     # Lava
     if little_dude.y >= HEIGHT - little_dude.size:
-        floor_Index = 0
-        fire_guy.visible = False
-        smoke.visible = False
-        fire_guy.x, fire_guy.y = -100, -100
-        little_dude.x, little_dude.y = floors[0].platforms[0].x + (floors[0].platforms[0].width - little_dude.size) // 2, floors[0].platforms[0].y - little_dude.size
-        shifting_platforms = []
+        reset()
 
     # Shift platforms at higher floors
     for i, platform_ in enumerate(floors[floor_Index].platforms):
