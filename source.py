@@ -46,10 +46,28 @@ def reset():
     fire_guy.visible = False
     smoke.visible = False
     fire_guy.x, fire_guy.y = -100, -100
-    little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, HEIGHT - little_dude.size
+    little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, floors[0].platforms[0].y - little_dude.size
+    little_dude.last_Platform = floors[0].platforms[0]
     shifting_platforms = []
-    for platforms in floors[0].platforms:
-        platforms.visible = True
+    for floor in floors:
+        for platform in floor.platforms:
+            platform.visible = True
+
+def fire_guy_target_platform():
+    global smoke, shifting_platforms, floor_Index, fire_guy, floors, num_platforms, numOfPoints
+    fire_guy.moving = True
+    i = random.randint(1, num_platforms)
+    while i in shifting_platforms or floors[floor_Index].platforms[i].visible is False or floors[floor_Index].platforms[i] == fire_guy.current_Platform:
+        i = random.randint(1, num_platforms)
+    target = floors[floor_Index].platforms[i]
+    fire_guy.current_Platform = target
+    p0 = (fire_guy.x, fire_guy.y)
+    smoke.x = fire_guy.x
+    smoke.y = fire_guy.y
+    smoke.visible = True
+    p1 = (target.x + target.width // 2 - fire_guy.size // 2, target.y - fire_guy.size)
+    fire_guy.path = curved_path(p0, p1, [100, 0], steps=numOfPoints)
+    fire_guy.path_index = 0
 
 # Game objects
 class sprite:
@@ -81,6 +99,7 @@ class platform:
         self.y = y
         self.direction = "right"
         self.visible = True
+        self.moving = False
 class floor:
     def __init__(self):
         self.platforms = []
@@ -223,32 +242,17 @@ while True:
             fire_guy.x = platform_.x + platform_.width // 2 - fire_guy.size // 2
             fire_guy.y = platform_.y - fire_guy.size
             fire_guy.visible = True
+            fire_guy.current_Platform = platform_
 
     # Fire guy changing platforms
-    if fire_guy.visible and fire_guy.moving is False and fire_guy.stayDuration <= 0:
-        fire_guy.moving = True
-        i = random.randint(1, num_platforms)
-        while i in shifting_platforms:
-            i = random.randint(1, num_platforms - 1)
-        target = floors[floor_Index].platforms[i]
-        p0 = (fire_guy.x, fire_guy.y)
-        smoke.x = fire_guy.x
-        smoke.y = fire_guy.y
-        smoke.visible = True
-        p1 = (target.x + target.width // 2 - fire_guy.size // 2, target.y - fire_guy.size)
-        fire_guy.path = curved_path(p0, p1, [100, 0], steps=numOfPoints)
-        fire_guy.path_index = 0
-    elif fire_guy.visible and fire_guy.moving is False:
-        fire_guy.stayDuration -= 1
     if fire_guy.moving:
         if fire_guy.path_index < len(fire_guy.path):
             fire_guy.x, fire_guy.y = fire_guy.path[fire_guy.path_index]
 
         if fire_guy.x == fire_guy.path[-1][0] and fire_guy.y == fire_guy.path[-1][1]:
               fire_guy.moving = False
-              fire_guy.stayDuration = 20
               smoke.visible = False
-        
+              
         fire_guy.path_index += 1
 
     # Check for landing on platforms
@@ -275,6 +279,9 @@ while True:
         if (little_dude.current_Platform is not little_dude.last_Platform
             and little_dude.y == little_dude.height_limit):
             destroy_Platform(little_dude.last_Platform)
+            if fire_guy.visible and little_dude.current_Platform != floors[floor_Index].platforms[0]:
+                fire_guy.last_Platform = fire_guy.current_Platform
+                fire_guy_target_platform()
             little_dude.last_Platform = little_dude.current_Platform
 
     # Fire guy collision with player
@@ -355,8 +362,9 @@ while True:
 
     # Draw platforms``
     for platform_ in floors[floor_Index].platforms:
-        pygame.draw.rect(screen, platform_.color, 
-                         (platform_.x, platform_.y, platform_.width, platform_.height))
+        if platform_.visible:
+            pygame.draw.rect(screen, platform_.color, 
+                            (platform_.x, platform_.y, platform_.width, platform_.height))
         
     # Draw fire guy
     if fire_guy.visible:
