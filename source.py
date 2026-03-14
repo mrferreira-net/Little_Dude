@@ -35,16 +35,24 @@ def is_colliding(rect1, rect2):
     )
 
 def destroy_Platform(platform_):
-            platform_.visible = False
-            if little_dude.current_Platform == platform_:
-                little_dude.height_limit = HEIGHT - little_dude.size
-                little_dude.current_Platform = None
-
+        global floors, floor_Index, valid_platforms
+        for i, platform in enumerate(floors[floor_Index].platforms):
+            if platform == platform_ and i != 0:
+                try:
+                    valid_platforms.remove(i)
+                except:
+                    pass
+        platform_.visible = False
+        if little_dude.current_Platform == platform_:
+            little_dude.height_limit = HEIGHT - little_dude.size
+            little_dude.current_Platform = None
+            
 def reset():
-    global floor_Index, shifting_platforms
+    global floor_Index, shifting_platforms, valid_platforms
     floor_Index = 0
     fire_guy.visible = False
     smoke.visible = False
+    ball.visible = False
     fire_guy.x, fire_guy.y = -100, -100
     little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, floors[0].platforms[0].y - little_dude.size
     little_dude.last_Platform = floors[0].platforms[0]
@@ -52,13 +60,16 @@ def reset():
     for floor in floors:
         for platform in floor.platforms:
             platform.visible = True
+    valid_platforms = [1, 2, 3, 4, 5, 6]
 
 def fire_guy_target_platform():
     global smoke, shifting_platforms, floor_Index, fire_guy, floors, num_platforms, numOfPoints
     fire_guy.moving = True
-    i = random.randint(1, num_platforms)
+    if len(valid_platforms) <= 1:
+        return
+    i = random.choice(valid_platforms)
     while i in shifting_platforms or floors[floor_Index].platforms[i].visible is False or floors[floor_Index].platforms[i] == fire_guy.current_Platform:
-        i = random.randint(1, num_platforms)
+        i = random.choice(valid_platforms)
     target = floors[floor_Index].platforms[i]
     fire_guy.current_Platform = target
     p0 = (fire_guy.x, fire_guy.y)
@@ -90,6 +101,8 @@ class sprite:
         self.last_Platform = None
         self.current_Platform = None
         self.height_limit = self.y
+        self.direction = "right"
+        self.angle = 0
 class platform:
     def __init__(self, x, y):
         self.width = 100
@@ -108,19 +121,30 @@ class floor:
 def initiate_vars():
     global fire_guy, little_dude, smoke
     global bolt, numOfPoints, num_platforms, floors, floor_Index
-    global direction, shifting_platforms
+    global little_dude, shifting_platforms, valid_platforms
+    global ball
+
+    ball = sprite()
+    ball.x, ball.y, ball.size, ball.speed = -100, -100, 10, 2
+    ball.image = pygame.image.load("Data/Sprites/ball.png").convert_alpha()
+    ball.visible = False
+
     fire_guy = sprite()
     fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.7
     fire_guy.image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
+
     little_dude = sprite()
     little_dude.visible = True
-    little_dude.width, little_dude.height, little_dude.size = 50, 50, 50
+    little_dude.size = 50
     little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
+    
     smoke = sprite()
     smoke.image = pygame.image.load("Data/Sprites/smoke.png").convert_alpha()
+
     bolt = sprite()
     bolt.width, bolt.height, bolt.size = 10, 15, None
     bolt.image = pygame.image.load("Data/Sprites/bolt.png").convert_alpha()
+
     numOfPoints = int(100*(1/fire_guy.speed))
     num_platforms = 6
     floors = []
@@ -163,10 +187,11 @@ def initiate_vars():
             last_x = x
         floors.append(new_floor)
     floor_Index = 0
-    direction = "right"
-    shifting_platforms = []
     little_dude.last_Platform = floors[0].platforms[0]
     little_dude.y = floors[0].platforms[0].y - little_dude.size
+    shifting_platforms = []
+    
+    valid_platforms = [1, 2, 3, 4, 5, 6]
 initiate_vars()
 
 ### Main game loop
@@ -206,6 +231,7 @@ while True:
         fire_guy.path_index = 0
         fire_guy.moving = False
         fire_guy.stayDuration = 30
+        valid_platforms = [1, 2, 3, 4, 5, 6]
 
         # Changes floor index and resets player vertical position
         if floor_Index < len(floors) - 1:
@@ -219,7 +245,7 @@ while True:
         elif little_dude.x >= WIDTH - floor_platform.width / 2:
             floors[floor_Index].platforms[0].x = WIDTH - floor_platform.width 
         else:
-            floors[floor_Index].platforms[0].x = little_dude.x - (floor_platform.width - little_dude.width) // 2
+            floors[floor_Index].platforms[0].x = little_dude.x - (floor_platform.width - little_dude.size) // 2
 
         # Chooses which platforms will shift
         range_ = 0
@@ -232,6 +258,7 @@ while True:
             while selected_platform_index in shifting_platforms:
                 selected_platform_index = random.randint(1, num_platforms)
             shifting_platforms.append(selected_platform_index)
+            valid_platforms.remove(selected_platform_index)
 
         # Chooses where fire guy spawns
         if floor_Index > 0:
@@ -243,6 +270,11 @@ while True:
             fire_guy.y = platform_.y - fire_guy.size
             fire_guy.visible = True
             fire_guy.current_Platform = platform_
+
+        if floor_Index >= 5:
+            ball.visible = True
+            ball.x = random.randint(0, WIDTH - ball.size)
+            ball.y = random.randint(0, (HEIGHT - ball.size - 10) // 2)
 
     # Fire guy changing platforms
     if fire_guy.moving:
@@ -331,12 +363,21 @@ while True:
                     platform_.direction = "right"
 
     # Direction tracking
-    if little_dude.x > lastLoc and direction != "right":
-        direction = "right"
+    if little_dude.x > lastLoc and little_dude.direction != "right":
+        little_dude.direction = "right"
         little_dude.image = pygame.transform.flip(little_dude.image, True, False)
-    elif little_dude.x < lastLoc and direction != "left":
-        direction = "left"
+    elif little_dude.x < lastLoc and little_dude.direction != "left":
+        little_dude.direction = "left"
         little_dude.image = pygame.transform.flip(little_dude.image, True, False)
+
+    # Ball physics
+    if ball.visible:
+        if ball.x <= 0 or ball.x >= WIDTH - ball.size:
+            ball.speed = -ball.speed
+        if ball.y <= 0 or ball.y >= HEIGHT - ball.size:
+            ball.speed = -ball.speed
+        ball.x += ball.speed
+        ball.y += ball.speed
 
     # Render floor number text
     font_size = 40
@@ -377,6 +418,13 @@ while True:
     # Draw bolt    
     if bolt.visible:
         screen.blit(bolt.image, (bolt.x, bolt.y))
+
+    if ball.visible:
+        ball.angle += 5
+        if ball.angle >= 360:
+            ball.angle = 0
+        rotated_ball = pygame.transform.rotate(ball.image, ball.angle)
+        screen.blit(rotated_ball, (ball.x, ball.y))
 
     # Update display
     pygame.display.flip()
