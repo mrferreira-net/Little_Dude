@@ -6,6 +6,7 @@ import numpy as np
 
 # Initialize pygame
 pygame.init()
+pygame.mixer.init()
 
 # Window setup
 WIDTH, HEIGHT = 640, 480
@@ -49,10 +50,13 @@ def destroy_Platform(platform_):
             
 def reset():
     global floor_Index, shifting_platforms, valid_platforms, balls
+    global numOfPoints, fire_guy, smoke, little_dude, floors
+    explosion_sound.play()
     floor_Index = 0
     fire_guy.visible = False
     smoke.visible = False
-    fire_guy.x, fire_guy.y = -100, -100
+    fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.3
+    numOfPoints = int(100*(1/fire_guy.speed))
     little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, floors[0].platforms[0].y - little_dude.size
     little_dude.last_Platform = floors[0].platforms[0]
     little_dude.current_Platform = floors[0].platforms[0]
@@ -65,18 +69,21 @@ def reset():
 
 def fire_guy_target_platform():
     global smoke, shifting_platforms, floor_Index, fire_guy, floors, num_platforms, numOfPoints
+    fire_jump_sound.play()
+    if not fire_guy.moving:
+        smoke.x = fire_guy.x
+        smoke.y = fire_guy.y
+        smoke.visible = True
     fire_guy.moving = True
     if len(valid_platforms) <= 1:
         return
     i = random.choice(valid_platforms)
-    while i in shifting_platforms or floors[floor_Index].platforms[i].visible is False or floors[floor_Index].platforms[i] == fire_guy.current_Platform:
+    while (i in shifting_platforms or floors[floor_Index].platforms[i].visible is False or 
+           floors[floor_Index].platforms[i] == fire_guy.current_Platform):
         i = random.choice(valid_platforms)
     target = floors[floor_Index].platforms[i]
     fire_guy.current_Platform = target
     p0 = (fire_guy.x, fire_guy.y)
-    smoke.x = fire_guy.x
-    smoke.y = fire_guy.y
-    smoke.visible = True
     p1 = (target.x + target.width // 2 - fire_guy.size // 2, target.y - fire_guy.size)
     fire_guy.path = curved_path(p0, p1, [100, 0], steps=numOfPoints)
     fire_guy.path_index = 0
@@ -113,6 +120,7 @@ class platform:
         self.color = (100, 50, 0)
         self.x = x
         self.y = y
+        self.speed = 1
         self.direction = "right"
         self.visible = True
         self.moving = False
@@ -125,10 +133,20 @@ def initiate_vars():
     global fire_guy, little_dude, smoke
     global bolt, numOfPoints, num_platforms, floors, floor_Index
     global little_dude, shifting_platforms, valid_platforms
-    global balls
+    global balls, jump_sound, explosion_sound, fire_jump_sound
+    global powerUp_sound, fire_explosion_sound, bounce_sound
+    global smoke_sound
+
+    jump_sound = pygame.mixer.Sound("Data/Sounds/jump.wav")
+    explosion_sound = pygame.mixer.Sound("Data/Sounds/explosion.wav")
+    fire_jump_sound = pygame.mixer.Sound("Data/Sounds/fire_jump.wav")
+    powerUp_sound = pygame.mixer.Sound("Data/Sounds/powerUp.wav")
+    fire_explosion_sound = pygame.mixer.Sound("Data/Sounds/fire_explosion.wav")
+    bounce_sound = pygame.mixer.Sound("Data/Sounds/bounce.wav")
+    smoke_sound = pygame.mixer.Sound("Data/Sounds/smoke.wav")
 
     fire_guy = sprite()
-    fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.7
+    fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.3
     fire_guy.image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
 
     little_dude = sprite()
@@ -206,6 +224,7 @@ while True:
             if event.key == pygame.K_UP or event.key == pygame.K_w:
                 if little_dude.jumpDuration == 0 and little_dude.y >= little_dude.height_limit:
                     little_dude.jumpDuration = 18
+                    jump_sound.play()
             # Debugging teleportation
             if event.key == pygame.K_t:
                 little_dude.y = -10
@@ -229,6 +248,7 @@ while True:
         shifting_platforms = [0]
         fire_guy.path = None
         smoke.visible = False
+        bolt.visible = False
         fire_guy.path_index = 0
         fire_guy.moving = False
         fire_guy.stayDuration = 30
@@ -272,17 +292,29 @@ while True:
             fire_guy.visible = True
             fire_guy.current_Platform = platform_
 
+        # Spawn new balls after floor 5, up to 4 balls at once
         if floor_Index >= 5:
-            ball = sprite()
-            ball.x, ball.y, ball.size, ball.speed = -100, -100, 10, 2
-            ball.width, ball.height = 10, 10
-            ball.x_del = random.choice([-1, 1])
-            ball.y_del = random.choice([-1, 1])
-            ball.image = pygame.image.load("Data/Sprites/ball.png").convert_alpha()
-            ball.visible = True
-            ball.x = random.randint(0, WIDTH - ball.size)
-            ball.y = random.randint(0, (HEIGHT - ball.size - 10) // 2)
-            balls.append(ball)
+            if len(balls) < 4:
+                ball = sprite()
+                ball.x, ball.y, ball.size, ball.speed = -100, -100, 10, 2
+                ball.width, ball.height = 10, 10
+                ball.x_del = random.choice([-1, 1])
+                ball.y_del = random.choice([-1, 1])
+                ball.image = pygame.image.load("Data/Sprites/ball.png").convert_alpha()
+                ball.visible = True
+                ball.x = random.randint(0, WIDTH - ball.size)
+                ball.y = random.randint(0, (HEIGHT - ball.size - 10) // 2)
+                balls.append(ball)
+
+        # Increase fire guy speed after floor 4
+        if floor_Index > 1:
+            if fire_guy.speed < 1:
+                fire_guy.speed += 0.1
+                numOfPoints = int(100*(1/fire_guy.speed))
+
+        if floor_Index > 10:
+            for platform_ in floors[floor_Index].platforms:
+                platform_.speed += 0.1 * floor_Index / 10
 
     # Fire guy changing platforms
     if fire_guy.moving:
@@ -291,6 +323,7 @@ while True:
 
         if fire_guy.x == fire_guy.path[-1][0] and fire_guy.y == fire_guy.path[-1][1]:
               fire_guy.moving = False
+              smoke_sound.play()
               smoke.visible = False
               
         fire_guy.path_index += 1
@@ -318,7 +351,7 @@ while True:
             little_dude.y += 3
         if (little_dude.current_Platform is not little_dude.last_Platform
             and little_dude.y == little_dude.height_limit):
-            if little_dude.last_Platform != floors[floor_Index].platforms[0] and floor_Index > 7:
+            if little_dude.last_Platform != floors[floor_Index].platforms[0] and floor_Index > 50:
                 destroy_Platform(little_dude.last_Platform)
             if fire_guy.visible and little_dude.current_Platform != floors[floor_Index].platforms[0]:
                 fire_guy.last_Platform = fire_guy.current_Platform
@@ -333,6 +366,7 @@ while True:
     # Player collides with smoke sprite
     if smoke.visible:
         if is_colliding(little_dude, smoke):
+            powerUp_sound.play()
             smoke.visible = False
             bolt.visible = True
             bolt.x = smoke.x
@@ -350,9 +384,11 @@ while True:
             bolt.y += 2
 
         if is_colliding(bolt, fire_guy):
+            fire_explosion_sound.play()
             fire_guy.visible = False
             smoke.visible = False
             bolt.visible = False
+            fire_guy.moving = False
             fire_guy.x, fire_guy.y = -100, -100
 
     # Lava
@@ -363,11 +399,11 @@ while True:
     for i, platform_ in enumerate(floors[floor_Index].platforms):
         if i in shifting_platforms:
             if platform_.direction == "right":
-                platform_.x += 1
+                platform_.x += platform_.speed
                 if platform_.x + platform_.width >= WIDTH:
                     platform_.direction = "left"
             else:
-                platform_.x -= 1
+                platform_.x -= platform_.speed
                 if platform_.x <= 0:
                     platform_.direction = "right"
 
@@ -385,8 +421,11 @@ while True:
             reset()
         if ball_.x <= 0 or ball_.x >= WIDTH - ball_.size:
             ball_.x_del = -ball_.x_del
+            bounce_sound.play()
         if ball_.y <= 0 or ball_.y >= HEIGHT - ball_.size:
             ball_.y_del = -ball_.y_del
+            bounce_sound.play()
+
         ball_.x += ball_.x_del * ball_.speed
         ball_.y += ball_.y_del * ball_.speed
 
