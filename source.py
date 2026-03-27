@@ -120,7 +120,7 @@ class platform:
     def __init__(self, x, y):
         self.width = 100
         self.height = 20
-        self.color = (100, 50, 0)
+        self.color = (158, 153, 146)
         self.x = x
         self.y = y
         self.speed = 1
@@ -155,6 +155,7 @@ def initiate_vars():
     little_dude = sprite()
     little_dude.visible = True
     little_dude.size, little_dude.width, little_dude.height = 50, 50, 50
+    
     little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
     
     smoke = sprite()
@@ -172,7 +173,6 @@ def initiate_vars():
     for floor_idx in range(100):
         new_floor = floor()
         new_floor.platforms.append(platform(0, 0))
-        new_floor.platforms[0].color = (158, 153, 146)
         new_floor.platforms[0].width = 300
         new_floor.platforms[0].x = (WIDTH - 300) // 2 
         new_floor.platforms[0].y = HEIGHT - 10
@@ -181,7 +181,7 @@ def initiate_vars():
         last_x = random.randint(0, WIDTH - 100)
         for plat_idx in range(num_platforms):
             # Random x position (ensure platform stays on screen)
-            deviation = 150
+            deviation = 100
             x = 0
             leftOrRight = -1
             left_deviation = last_x - deviation
@@ -211,6 +211,7 @@ def initiate_vars():
     little_dude.last_Platform = floors[0].platforms[0]
     little_dude.current_Platform = floors[0].platforms[0]
     little_dude.y = floors[0].platforms[0].y - little_dude.size
+    little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, floors[0].platforms[0].y - little_dude.size
     shifting_platforms = []
     
     valid_platforms = [1, 2, 3, 4, 5, 6]
@@ -444,7 +445,7 @@ while True:
 
 ### Draw everything on the screen
     # Fill screen
-    screen.fill((190, 190, 255))
+    screen.blit(pygame.image.load("Data/Sprites/background.png").convert(), (0, 0))
 
     # Draw player
     screen.blit(little_dude.image, (little_dude.x, little_dude.y))
@@ -458,6 +459,8 @@ while True:
     # Draw platforms``
     for platform_ in floors[floor_Index].platforms:
         if platform_.visible:
+            pygame.draw.rect(screen, 'black', 
+                            (platform_.x - 1, platform_.y - 1, platform_.width + 2, platform_.height + 2))
             pygame.draw.rect(screen, platform_.color, 
                             (platform_.x, platform_.y, platform_.width, platform_.height))
         
