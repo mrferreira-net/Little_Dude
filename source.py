@@ -35,6 +35,7 @@ def is_colliding(rect1, rect2):
         rect1.y + rect1.height > rect2.y
     )
 
+# Function to destroy a platform when player lands on new platform, making it invisible and uncollidable
 def destroy_Platform(platform_):
         global floors, floor_Index, valid_platforms
         for i, platform in enumerate(floors[floor_Index].platforms):
@@ -47,7 +48,8 @@ def destroy_Platform(platform_):
         if little_dude.current_Platform == platform_:
             little_dude.height_limit = HEIGHT - little_dude.size
             little_dude.current_Platform = None
-            
+
+# Reset game state after player dies         
 def reset():
     global floor_Index, shifting_platforms, valid_platforms, balls
     global numOfPoints, fire_guy, smoke, little_dude, floors
@@ -67,6 +69,7 @@ def reset():
     valid_platforms = [1, 2, 3, 4, 5, 6]
     balls = []
 
+# Function to move fire guy to a new platform
 def fire_guy_target_platform():
     global smoke, shifting_platforms, floor_Index, fire_guy, floors, num_platforms, numOfPoints
     fire_jump_sound.play()
@@ -192,11 +195,11 @@ def initiate_vars():
                 leftOrRight = 1
 
             if leftOrRight == 0:
-                lower_bound = max(0, left_deviation)
-                x = lower_bound
+                lower_bound = max(0, left_deviation - 100)
+                x = random.randint(lower_bound, last_x - 50)
             elif leftOrRight == 1:
-                upper_bound = min(WIDTH - 100, last_x + 100 + deviation) 
-                x = upper_bound
+                upper_bound = min(WIDTH - 100, right_deviation) 
+                x = random.randint(last_x + 100 + 50, upper_bound)
 
             # Space platforms vertically
             y = HEIGHT - 30 - ((plat_idx + 1)  * 60)
@@ -274,6 +277,7 @@ while True:
             range_ = floor_Index - 1
         else:
             range_ = 3
+        range_ = random.randint(0, range_)
         for i in range(range_):
             selected_platform_index = random.randint(1, num_platforms)
             while selected_platform_index in shifting_platforms:
