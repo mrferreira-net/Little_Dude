@@ -14,7 +14,7 @@ joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_coun
 
 # Initualize mixer for sounds
 pygame.mixer.init()
-pygame.mixer.music.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/Littledude_music.wav")
+pygame.mixer.music.load("Data/Sounds/Littledude_music.wav")
 pygame.mixer.music.set_volume(0.3)
 pygame.mixer.music.play(-1)
 
@@ -75,7 +75,7 @@ def reset():
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
     running = True
-    little_dude.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/little_dude.png").convert_alpha()
+    little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
     little_dude.direction = "right"
 
     floor_Index = 0
@@ -169,34 +169,34 @@ def initiate_vars():
 
     running = True
 
-    background_image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/background.png").convert_alpha()
-    dead_image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/dead.png").convert_alpha()
+    background_image = pygame.image.load("Data/Sprites/background.png").convert_alpha()
+    dead_image = pygame.image.load("Data/Sprites/dead.png").convert_alpha()
 
-    jump_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/jump.wav")
+    jump_sound = pygame.mixer.Sound("Data/Sounds/jump.wav")
     jump_sound.set_volume(0.2)
-    explosion_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/explosion.wav")
-    fire_jump_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/fire_jump.wav")
-    powerUp_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/powerUp.wav")
-    fire_explosion_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/fire_explosion.wav")
-    smoke_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/smoke.wav")
+    explosion_sound = pygame.mixer.Sound("Data/Sounds/explosion.wav")
+    fire_jump_sound = pygame.mixer.Sound("Data/Sounds/fire_jump.wav")
+    powerUp_sound = pygame.mixer.Sound("Data/Sounds/powerUp.wav")
+    fire_explosion_sound = pygame.mixer.Sound("Data/Sounds/fire_explosion.wav")
+    smoke_sound = pygame.mixer.Sound("Data/Sounds/smoke.wav")
 
     fire_guy = sprite()
     fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.3
-    fire_guy.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/fire_guy_s.png").convert_alpha()
+    fire_guy.image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
     fire_guy_dead = 0
 
     little_dude = sprite()
     little_dude.visible = True
     little_dude.size, little_dude.width, little_dude.height = 50, 50, 50
     
-    little_dude.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/little_dude.png").convert_alpha()
+    little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
     
     smoke = sprite()
-    smoke.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/smoke.png").convert_alpha()
+    smoke.image = pygame.image.load("Data/Sprites/smoke.png").convert_alpha()
 
     bolt = sprite()
     bolt.width, bolt.height, bolt.size = 10, 15, None
-    bolt.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/bolt.png").convert_alpha()
+    bolt.image = pygame.image.load("Data/Sprites/bolt.png").convert_alpha()
 
     balls = []
 
@@ -423,7 +423,7 @@ while running:
                 ball.width, ball.height = 10, 10
                 ball.x_del = random.choice([-1, 1])
                 ball.y_del = random.choice([-1, 1])
-                ball.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/ball.png").convert_alpha()
+                ball.image = pygame.image.load("Data/Sprites/ball.png").convert_alpha()
                 ball.visible = True
                 ball.x = random.randint(0, WIDTH - ball.size)
                 ball.y = random.randint(0, (HEIGHT - ball.size - 10) // 2)
