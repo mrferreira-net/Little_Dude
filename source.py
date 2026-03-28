@@ -6,7 +6,12 @@ import numpy as np
 
 # Initialize pygame
 pygame.init()
+
+# Initualize mixer for sounds
 pygame.mixer.init()
+pygame.mixer.music.load("Data/Sounds/Littledude_music.wav")
+pygame.mixer.music.set_volume(0.3)
+pygame.mixer.music.play(-1)
 
 # Window setup
 WIDTH, HEIGHT = 640, 480
@@ -52,11 +57,27 @@ def destroy_Platform(platform_):
 # Reset game state after player dies         
 def reset():
     global floor_Index, shifting_platforms, valid_platforms, balls
-    global numOfPoints, fire_guy, smoke, little_dude, floors
+    global numOfPoints, fire_guy, smoke, little_dude, floors, running
+
+    running = False
+    little_dude.image = pygame.image.load("Data/Sprites/dead.png").convert_alpha()
+    render_display()
     explosion_sound.play()
+    start_time = pygame.time.get_ticks()
+    current_time = pygame.time.get_ticks()
+    elapsed_time = current_time - start_time
+    while elapsed_time < 200:
+        current_time = pygame.time.get_ticks()
+        elapsed_time = current_time - start_time
+    running = True
+    little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
+    little_dude.direction = "right"
+
     floor_Index = 0
     fire_guy.visible = False
+    fire_guy.moving = False
     smoke.visible = False
+    bolt.visible = False
     fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.3
     numOfPoints = int(100*(1/fire_guy.speed))
     little_dude.x, little_dude.y = (WIDTH - little_dude.size) // 2, floors[0].platforms[0].y - little_dude.size
@@ -72,11 +93,11 @@ def reset():
 # Function to move fire guy to a new platform
 def fire_guy_target_platform():
     global smoke, shifting_platforms, floor_Index, fire_guy, floors, num_platforms, numOfPoints
-    fire_jump_sound.play()
     if not fire_guy.moving:
         smoke.x = fire_guy.x
         smoke.y = fire_guy.y
         smoke.visible = True
+        fire_jump_sound.play()
     fire_guy.moving = True
     if len(valid_platforms) <= 1:
         return
@@ -137,20 +158,23 @@ def initiate_vars():
     global bolt, numOfPoints, num_platforms, floors, floor_Index
     global little_dude, shifting_platforms, valid_platforms
     global balls, jump_sound, explosion_sound, fire_jump_sound
-    global powerUp_sound, fire_explosion_sound, bounce_sound
-    global smoke_sound
+    global powerUp_sound, fire_explosion_sound
+    global smoke_sound, running, fire_guy_dead
+
+    running = True
 
     jump_sound = pygame.mixer.Sound("Data/Sounds/jump.wav")
+    jump_sound.set_volume(0.2)
     explosion_sound = pygame.mixer.Sound("Data/Sounds/explosion.wav")
     fire_jump_sound = pygame.mixer.Sound("Data/Sounds/fire_jump.wav")
     powerUp_sound = pygame.mixer.Sound("Data/Sounds/powerUp.wav")
     fire_explosion_sound = pygame.mixer.Sound("Data/Sounds/fire_explosion.wav")
-    bounce_sound = pygame.mixer.Sound("Data/Sounds/bounce.wav")
     smoke_sound = pygame.mixer.Sound("Data/Sounds/smoke.wav")
 
     fire_guy = sprite()
     fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.3
     fire_guy.image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
+    fire_guy_dead = 0
 
     little_dude = sprite()
     little_dude.visible = True
@@ -184,8 +208,8 @@ def initiate_vars():
             deviation = 100
             x = 0
             leftOrRight = -1
-            left_deviation = last_x - deviation
-            right_deviation = last_x + 100 + deviation
+            left_deviation = last_x - deviation - 50
+            right_deviation = last_x + 100 + deviation + 50
 
             if left_deviation >= 0 and right_deviation <= WIDTH - 100:
                 leftOrRight = random.randint(0,1)
@@ -195,14 +219,15 @@ def initiate_vars():
                 leftOrRight = 1
 
             if leftOrRight == 0:
-                lower_bound = max(0, left_deviation - 100)
-                x = random.randint(lower_bound, last_x - 50)
+                lower_bound = max(0, left_deviation)
+                x = random.randint(lower_bound, last_x - 50 - 100)
             elif leftOrRight == 1:
                 upper_bound = min(WIDTH - 100, right_deviation) 
                 x = random.randint(last_x + 100 + 50, upper_bound)
 
             # Space platforms vertically
             y = HEIGHT - 30 - ((plat_idx + 1)  * 60)
+
             new_platform = platform(x, y)
             new_floor.platforms.append(new_platform)
             last_x = x
@@ -215,10 +240,75 @@ def initiate_vars():
     shifting_platforms = []
     
     valid_platforms = [1, 2, 3, 4, 5, 6]
-initiate_vars()
+
+### Draw everything on the screen
+def render_display():
+    global fire_guy_dead
+    # Fill screen
+    screen.blit(pygame.image.load("Data/Sprites/background.png").convert(), (0, 0))
+
+    # Draw player
+    screen.blit(little_dude.image, (little_dude.x, little_dude.y))
+    
+    # Draw floor number
+    screen.blit(text, text_rect)
+
+    # Draw lava
+    pygame.draw.rect(screen, (240, 105, 22), (0, HEIGHT - 6, WIDTH, 10), 0)
+
+    # Draw platforms
+    for platform_ in floors[floor_Index].platforms:
+        if platform_.visible:
+            pygame.draw.rect(screen, 'black', 
+                            (platform_.x - 1, platform_.y - 1, platform_.width + 2, platform_.height + 2))
+            pygame.draw.rect(screen, platform_.color, 
+                            (platform_.x, platform_.y, platform_.width, platform_.height))
+        
+    # Draw fire guy
+    if fire_guy.visible:
+        screen.blit(fire_guy.image, (fire_guy.x, fire_guy.y))
+
+    if fire_guy_dead == 1:
+        global fg_death_time
+        fg_death_time = pygame.time.get_ticks()
+        fire_guy_dead = -1
+    elif fire_guy_dead == -1:
+        current_time = pygame.time.get_ticks()
+        elapsed_time = current_time - fg_death_time
+        if elapsed_time < 200:
+            explosion_image = pygame.image.load("Data/Sprites/dead.png").convert_alpha()
+            explosion_diff = (50 - fire_guy.size) // 2
+            explosion_x = fire_guy.x - explosion_diff
+            explosion_y = fire_guy.y - explosion_diff
+            screen.blit(explosion_image, (explosion_x, explosion_y))
+        else:
+            fire_guy_dead = 0
+
+    # Draw smoke
+    if smoke.visible:
+        screen.blit(smoke.image, (smoke.x, smoke.y))
+
+    # Draw bolt    
+    if bolt.visible:
+        screen.blit(bolt.image, (bolt.x, bolt.y))
+
+    # Draw ball
+    for ball_ in balls:
+        ball_.angle += 5
+        if ball_.angle >= 360:
+            ball_.angle = 0
+        rotated_ball = pygame.transform.rotate(ball_.image, ball_.angle)
+        screen.blit(rotated_ball, (ball_.x, ball_.y))
+
+    # Update display
+    pygame.display.flip()
+
+    # Cap FPS
+    clock.tick(60)
 
 ### Main game loop
-while True:
+initiate_vars()
+while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -358,7 +448,7 @@ while True:
             and little_dude.y == little_dude.height_limit):
             if little_dude.last_Platform != floors[floor_Index].platforms[0] and floor_Index > 50:
                 destroy_Platform(little_dude.last_Platform)
-            if fire_guy.visible and little_dude.current_Platform != floors[floor_Index].platforms[0]:
+            if fire_guy.visible and little_dude.current_Platform != floors[floor_Index].platforms[0] and fire_guy.moving is False:
                 fire_guy.last_Platform = fire_guy.current_Platform
                 fire_guy_target_platform()
             little_dude.last_Platform = little_dude.current_Platform
@@ -389,12 +479,12 @@ while True:
             bolt.y += 2
 
         if is_colliding(bolt, fire_guy):
+            fire_guy_dead = 1
             fire_explosion_sound.play()
             fire_guy.visible = False
             smoke.visible = False
             bolt.visible = False
             fire_guy.moving = False
-            fire_guy.x, fire_guy.y = -100, -100
 
     # Lava
     if little_dude.y >= HEIGHT - little_dude.size:
@@ -426,10 +516,8 @@ while True:
             reset()
         if ball_.x <= 0 or ball_.x >= WIDTH - ball_.size:
             ball_.x_del = -ball_.x_del
-            bounce_sound.play()
         if ball_.y <= 0 or ball_.y >= HEIGHT - ball_.size:
             ball_.y_del = -ball_.y_del
-            bounce_sound.play()
 
         ball_.x += ball_.x_del * ball_.speed
         ball_.y += ball_.y_del * ball_.speed
@@ -442,50 +530,4 @@ while True:
     text_rect = text.get_rect()
     text_rect.topleft = (10, 0)
         
-
-### Draw everything on the screen
-    # Fill screen
-    screen.blit(pygame.image.load("Data/Sprites/background.png").convert(), (0, 0))
-
-    # Draw player
-    screen.blit(little_dude.image, (little_dude.x, little_dude.y))
-    
-    # Draw floor number
-    screen.blit(text, text_rect)
-
-    # Draw lava
-    pygame.draw.rect(screen, (240, 105, 22), (0, HEIGHT - 6, WIDTH, 10), 0)
-
-    # Draw platforms``
-    for platform_ in floors[floor_Index].platforms:
-        if platform_.visible:
-            pygame.draw.rect(screen, 'black', 
-                            (platform_.x - 1, platform_.y - 1, platform_.width + 2, platform_.height + 2))
-            pygame.draw.rect(screen, platform_.color, 
-                            (platform_.x, platform_.y, platform_.width, platform_.height))
-        
-    # Draw fire guy
-    if fire_guy.visible:
-        screen.blit(fire_guy.image, (fire_guy.x, fire_guy.y))
-
-    # Draw smoke
-    if smoke.visible:
-        screen.blit(smoke.image, (smoke.x, smoke.y))
-
-    # Draw bolt    
-    if bolt.visible:
-        screen.blit(bolt.image, (bolt.x, bolt.y))
-
-    # Draw ball
-    for ball_ in balls:
-        ball_.angle += 5
-        if ball_.angle >= 360:
-            ball_.angle = 0
-        rotated_ball = pygame.transform.rotate(ball_.image, ball_.angle)
-        screen.blit(rotated_ball, (ball_.x, ball_.y))
-
-    # Update display
-    pygame.display.flip()
-
-    # Cap FPS
-    clock.tick(60)
+    render_display()
