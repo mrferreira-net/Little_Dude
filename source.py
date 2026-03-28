@@ -3,13 +3,18 @@ import pygame
 import sys
 import random
 import numpy as np
+import os
+# os.environ['SDL_AUDIODRIVER'] = 'dummy'
 
 # Initialize pygame
 pygame.init()
+pygame.mouse.set_visible(False)
+pygame.joystick.init()
+joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 
 # Initualize mixer for sounds
 pygame.mixer.init()
-pygame.mixer.music.load("Data/Sounds/Littledude_music.wav")
+pygame.mixer.music.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/Littledude_music.wav")
 pygame.mixer.music.set_volume(0.3)
 pygame.mixer.music.play(-1)
 
@@ -60,7 +65,7 @@ def reset():
     global numOfPoints, fire_guy, smoke, little_dude, floors, running
 
     running = False
-    little_dude.image = pygame.image.load("Data/Sprites/dead.png").convert_alpha()
+    little_dude.image = dead_image
     render_display()
     explosion_sound.play()
     start_time = pygame.time.get_ticks()
@@ -70,7 +75,7 @@ def reset():
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
     running = True
-    little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
+    little_dude.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/little_dude.png").convert_alpha()
     little_dude.direction = "right"
 
     floor_Index = 0
@@ -160,34 +165,38 @@ def initiate_vars():
     global balls, jump_sound, explosion_sound, fire_jump_sound
     global powerUp_sound, fire_explosion_sound
     global smoke_sound, running, fire_guy_dead
+    global background_image, dead_image
 
     running = True
 
-    jump_sound = pygame.mixer.Sound("Data/Sounds/jump.wav")
+    background_image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/background.png").convert_alpha()
+    dead_image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/dead.png").convert_alpha()
+
+    jump_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/jump.wav")
     jump_sound.set_volume(0.2)
-    explosion_sound = pygame.mixer.Sound("Data/Sounds/explosion.wav")
-    fire_jump_sound = pygame.mixer.Sound("Data/Sounds/fire_jump.wav")
-    powerUp_sound = pygame.mixer.Sound("Data/Sounds/powerUp.wav")
-    fire_explosion_sound = pygame.mixer.Sound("Data/Sounds/fire_explosion.wav")
-    smoke_sound = pygame.mixer.Sound("Data/Sounds/smoke.wav")
+    explosion_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/explosion.wav")
+    fire_jump_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/fire_jump.wav")
+    powerUp_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/powerUp.wav")
+    fire_explosion_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/fire_explosion.wav")
+    smoke_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/little_dude/Data/Sounds/smoke.wav")
 
     fire_guy = sprite()
     fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.3
-    fire_guy.image = pygame.image.load("Data/Sprites/fire_guy_s.png").convert_alpha()
+    fire_guy.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/fire_guy_s.png").convert_alpha()
     fire_guy_dead = 0
 
     little_dude = sprite()
     little_dude.visible = True
     little_dude.size, little_dude.width, little_dude.height = 50, 50, 50
     
-    little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
+    little_dude.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/little_dude.png").convert_alpha()
     
     smoke = sprite()
-    smoke.image = pygame.image.load("Data/Sprites/smoke.png").convert_alpha()
+    smoke.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/smoke.png").convert_alpha()
 
     bolt = sprite()
     bolt.width, bolt.height, bolt.size = 10, 15, None
-    bolt.image = pygame.image.load("Data/Sprites/bolt.png").convert_alpha()
+    bolt.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/bolt.png").convert_alpha()
 
     balls = []
 
@@ -245,7 +254,7 @@ def initiate_vars():
 def render_display():
     global fire_guy_dead
     # Fill screen
-    screen.blit(pygame.image.load("Data/Sprites/background.png").convert(), (0, 0))
+    screen.blit(background_image, (0, 0))
 
     # Draw player
     screen.blit(little_dude.image, (little_dude.x, little_dude.y))
@@ -276,11 +285,10 @@ def render_display():
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - fg_death_time
         if elapsed_time < 200:
-            explosion_image = pygame.image.load("Data/Sprites/dead.png").convert_alpha()
             explosion_diff = (50 - fire_guy.size) // 2
             explosion_x = fire_guy.x - explosion_diff
             explosion_y = fire_guy.y - explosion_diff
-            screen.blit(explosion_image, (explosion_x, explosion_y))
+            screen.blit(dead_image, (explosion_x, explosion_y))
         else:
             fire_guy_dead = 0
 
@@ -309,6 +317,7 @@ def render_display():
 ### Main game loop
 initiate_vars()
 while running:
+    lastLoc = little_dude.x
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -322,15 +331,34 @@ while running:
             # Debugging teleportation
             if event.key == pygame.K_t:
                 little_dude.y = -10
-    # Key handling for hold down keys
-    lastLoc = little_dude.x
-    keys = pygame.key.get_pressed()
-    if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and little_dude.x > 0:
-        little_dude.x -= little_dude.speed
-    if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and little_dude.x < WIDTH - little_dude.size:
-        little_dude.x += little_dude.speed
-    if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and little_dude.y < HEIGHT - little_dude.size - 10:
-        little_dude.y += little_dude.speed
+
+    # Joystick handling
+    for joystick in joysticks:
+        if joystick.get_button(9):
+            pygame.quit()
+            sys.exit()
+        
+        hat_x = joystick.get_hat(0)[0]
+        hat_y = joystick.get_hat(0)[1]
+        if hat_x == -1 and little_dude.x > 0:
+            little_dude.x -= little_dude.speed
+        if hat_x == 1 and little_dude.x < WIDTH - little_dude.size:
+            little_dude.x += little_dude.speed
+        if hat_y == -1 and little_dude.y < HEIGHT - little_dude.size - 10:
+            little_dude.y += little_dude.speed
+        if joystick.get_button(0) or hat_y == 1:
+            if little_dude.jumpDuration == 0 and little_dude.y >= little_dude.height_limit:
+                little_dude.jumpDuration = 18
+                jump_sound.play()
+
+    # Key handling for hold down keys (PC controls)
+    # keys = pygame.key.get_pressed()
+    # if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and little_dude.x > 0:
+    #     little_dude.x -= little_dude.speed
+    # if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and little_dude.x < WIDTH - little_dude.size:
+    #     little_dude.x += little_dude.speed
+    # if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and little_dude.y < HEIGHT - little_dude.size - 10:
+    #     little_dude.y += little_dude.speed
 
     # Jumping
     if little_dude.jumpDuration > 0:
@@ -395,7 +423,7 @@ while running:
                 ball.width, ball.height = 10, 10
                 ball.x_del = random.choice([-1, 1])
                 ball.y_del = random.choice([-1, 1])
-                ball.image = pygame.image.load("Data/Sprites/ball.png").convert_alpha()
+                ball.image = pygame.image.load("/home/pi/RetroPie/roms/ports/little_dude/Data/Sprites/ball.png").convert_alpha()
                 ball.visible = True
                 ball.x = random.randint(0, WIDTH - ball.size)
                 ball.y = random.randint(0, (HEIGHT - ball.size - 10) // 2)
