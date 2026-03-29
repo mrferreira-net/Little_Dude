@@ -97,7 +97,7 @@ def reset():
     font_size = 40
     text_font = pygame.font.SysFont('arial', font_size)
     floor_num = floor_Index + 1
-    text = text_font.render("Floor " + str(floor_num), True, (255, 255, 255))
+    text = text_font.render("Floor " + str(floor_num) + "                                High Score: " + str(highscore), True, (255, 255, 255))
     text_rect = text.get_rect()
     text_rect.topleft = (10, 0)
 
@@ -173,10 +173,9 @@ def initiate_vars():
     global smoke_sound, running, fire_guy_dead
     global background_image, dead_image, ball_image
     global lava_image, littleDude_image, text, text_rect, littleDude_left_image
-    global platform_image, base_platform_image
+    global platform_image, base_platform_image, highscore
 
     running = True
-
     base_platform_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/base_platform.png").convert_alpha()
     platform_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/platform.png").convert_alpha()
     background_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/background.png").convert_alpha()
@@ -256,6 +255,7 @@ def initiate_vars():
             last_x = x
         floors.append(new_floor)
     floor_Index = 0
+    highscore = floor_Index
     little_dude.last_Platform = floors[0].platforms[0]
     little_dude.current_Platform = floors[0].platforms[0]
     little_dude.y = floors[0].platforms[0].y - little_dude.size
@@ -267,7 +267,7 @@ def initiate_vars():
     font_size = 40
     text_font = pygame.font.SysFont('arial', font_size)
     floor_num = floor_Index + 1
-    text = text_font.render("Floor " + str(floor_num), True, (255, 255, 255))
+    text = text_font.render("Floor " + str(floor_num) + "                                High Score: " + str(highscore), True, (255, 255, 255))
     text_rect = text.get_rect()
     text_rect.topleft = (10, 0)
 
@@ -404,10 +404,13 @@ while running:
         little_dude.y = HEIGHT - little_dude.size - 10
 
         # Render floor number text
+        highscore = floor_Index if floor_Index > highscore else highscore
+        with open("/home/pi/RetroPie/roms/ports/Little_Dude/Data/highscore.txt", "w") as f:
+            f.write(f"Highscore: {highscore}\n")
         font_size = 40
         text_font = pygame.font.SysFont('arial', font_size)
         floor_num = floor_Index + 1
-        text = text_font.render("Floor " + str(floor_num), True, (255, 255, 255))
+        text = text_font.render("Floor " + str(floor_num) + "                                High Score: " + str(highscore), True, (255, 255, 255))
         text_rect = text.get_rect()
         text_rect.topleft = (10, 0)
 
