@@ -1,3 +1,3 @@
 @echo off
-cd C:\Users\mathe\OneDrive\Documents\GitHub\Little_Dude\
+call .venv\Scripts\activate.bat
 python source_pc.py
