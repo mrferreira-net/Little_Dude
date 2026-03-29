@@ -61,6 +61,7 @@ def destroy_Platform(platform_):
 def reset():
     global floor_Index, shifting_platforms, valid_platforms, balls
     global numOfPoints, fire_guy, smoke, little_dude, floors, running
+    global text, text_rect
 
     running = False
     little_dude.image = dead_image
