@@ -1,10 +1,7 @@
-import ctypes
 import pygame
 import sys
 import random
 import numpy as np
-import os
-# os.environ['SDL_AUDIODRIVER'] = 'dummy'
 
 # Initialize pygame
 pygame.init()
@@ -13,6 +10,7 @@ pygame.joystick.init()
 joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 
 # Initualize mixer for sounds
+pygame.mixer.pre_init(frequency=48000, buffer=2048)
 pygame.mixer.init()
 pygame.mixer.music.load("Data/Sounds/Littledude_music.wav")
 pygame.mixer.music.set_volume(0.3)
@@ -75,7 +73,7 @@ def reset():
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
     running = True
-    little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
+    little_dude.image = littleDude_image
     little_dude.direction = "right"
 
     floor_Index = 0
@@ -94,6 +92,13 @@ def reset():
             platform.visible = True
     valid_platforms = [1, 2, 3, 4, 5, 6]
     balls = []
+
+    font_size = 40
+    text_font = pygame.font.SysFont('arial', font_size)
+    floor_num = floor_Index + 1
+    text = text_font.render("Floor " + str(floor_num), True, (255, 255, 255))
+    text_rect = text.get_rect()
+    text_rect.topleft = (10, 0)
 
 # Function to move fire guy to a new platform
 def fire_guy_target_platform():
@@ -165,12 +170,19 @@ def initiate_vars():
     global balls, jump_sound, explosion_sound, fire_jump_sound
     global powerUp_sound, fire_explosion_sound
     global smoke_sound, running, fire_guy_dead
-    global background_image, dead_image
+    global background_image, dead_image, ball_image
+    global lava_image, littleDude_image, text, text_rect, littleDude_left_image
+    global platform_image, base_platform_image
 
     running = True
 
+    base_platform_image = pygame.image.load("Data/Sprites/base_platform.png").convert_alpha()
+    platform_image = pygame.image.load("Data/Sprites/platform.png").convert_alpha()
     background_image = pygame.image.load("Data/Sprites/background.png").convert_alpha()
     dead_image = pygame.image.load("Data/Sprites/dead.png").convert_alpha()
+    lava_image = pygame.image.load("Data/Sprites/lava.png").convert_alpha()
+    littleDude_image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
+    littleDude_left_image = pygame.transform.flip(littleDude_image, True, False)
 
     jump_sound = pygame.mixer.Sound("Data/Sounds/jump.wav")
     jump_sound.set_volume(0.2)
@@ -189,8 +201,8 @@ def initiate_vars():
     little_dude.visible = True
     little_dude.size, little_dude.width, little_dude.height = 50, 50, 50
     
-    little_dude.image = pygame.image.load("Data/Sprites/little_dude.png").convert_alpha()
-    
+    little_dude.image = littleDude_image
+
     smoke = sprite()
     smoke.image = pygame.image.load("Data/Sprites/smoke.png").convert_alpha()
 
@@ -198,6 +210,7 @@ def initiate_vars():
     bolt.width, bolt.height, bolt.size = 10, 15, None
     bolt.image = pygame.image.load("Data/Sprites/bolt.png").convert_alpha()
 
+    ball_image = pygame.image.load("Data/Sprites/ball.png").convert_alpha()
     balls = []
 
     numOfPoints = int(100*(1/fire_guy.speed))
@@ -250,9 +263,16 @@ def initiate_vars():
     
     valid_platforms = [1, 2, 3, 4, 5, 6]
 
+    font_size = 40
+    text_font = pygame.font.SysFont('arial', font_size)
+    floor_num = floor_Index + 1
+    text = text_font.render("Floor " + str(floor_num), True, (255, 255, 255))
+    text_rect = text.get_rect()
+    text_rect.topleft = (10, 0)
+
 ### Draw everything on the screen
 def render_display():
-    global fire_guy_dead
+    global fire_guy_dead, text, text_rect
     # Fill screen
     screen.blit(background_image, (0, 0))
 
@@ -263,20 +283,21 @@ def render_display():
     screen.blit(text, text_rect)
 
     # Draw lava
-    pygame.draw.rect(screen, (240, 105, 22), (0, HEIGHT - 6, WIDTH, 10), 0)
+    screen.blit(lava_image, (0, HEIGHT - 6))
 
     # Draw platforms
     for platform_ in floors[floor_Index].platforms:
         if platform_.visible:
-            pygame.draw.rect(screen, 'black', 
-                            (platform_.x - 1, platform_.y - 1, platform_.width + 2, platform_.height + 2))
-            pygame.draw.rect(screen, platform_.color, 
-                            (platform_.x, platform_.y, platform_.width, platform_.height))
+            if platform_ == floors[floor_Index].platforms[0]:
+                screen.blit(base_platform_image, (platform_.x, platform_.y))
+            else:
+                screen.blit(platform_image, (platform_.x, platform_.y))
         
     # Draw fire guy
     if fire_guy.visible:
         screen.blit(fire_guy.image, (fire_guy.x, fire_guy.y))
 
+    # Draw fire guy explosion
     if fire_guy_dead == 1:
         global fg_death_time
         fg_death_time = pygame.time.get_ticks()
@@ -381,6 +402,14 @@ while running:
             floor_Index += 1
         little_dude.y = HEIGHT - little_dude.size - 10
 
+        # Render floor number text
+        font_size = 40
+        text_font = pygame.font.SysFont('arial', font_size)
+        floor_num = floor_Index + 1
+        text = text_font.render("Floor " + str(floor_num), True, (255, 255, 255))
+        text_rect = text.get_rect()
+        text_rect.topleft = (10, 0)
+
         # Centers platform on player
         floor_platform = floors[floor_Index].platforms[0]
         if little_dude.x <= floor_platform.width / 2:
@@ -423,7 +452,7 @@ while running:
                 ball.width, ball.height = 10, 10
                 ball.x_del = random.choice([-1, 1])
                 ball.y_del = random.choice([-1, 1])
-                ball.image = pygame.image.load("Data/Sprites/ball.png").convert_alpha()
+                ball.image = ball_image
                 ball.visible = True
                 ball.x = random.randint(0, WIDTH - ball.size)
                 ball.y = random.randint(0, (HEIGHT - ball.size - 10) // 2)
@@ -533,10 +562,10 @@ while running:
     # Direction tracking
     if little_dude.x > lastLoc and little_dude.direction != "right":
         little_dude.direction = "right"
-        little_dude.image = pygame.transform.flip(little_dude.image, True, False)
+        little_dude.image = littleDude_image
     elif little_dude.x < lastLoc and little_dude.direction != "left":
         little_dude.direction = "left"
-        little_dude.image = pygame.transform.flip(little_dude.image, True, False)
+        little_dude.image = littleDude_left_image
 
     # Ball physics
     for ball_ in balls:
@@ -549,13 +578,5 @@ while running:
 
         ball_.x += ball_.x_del * ball_.speed
         ball_.y += ball_.y_del * ball_.speed
-
-    # Render floor number text
-    font_size = 40
-    text_font = pygame.font.SysFont('arial', font_size)
-    floor_num = floor_Index + 1
-    text = text_font.render("Floor " + str(floor_num), True, (255, 255, 255))
-    text_rect = text.get_rect()
-    text_rect.topleft = (10, 0)
         
     render_display()
