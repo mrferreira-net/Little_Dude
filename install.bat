@@ -3,7 +3,7 @@
 echo ==== Little Dude Installer ====
 echo Installing Python 3.7.3
 echo Please follow the installation instructions and make sure to add Python to your PATH environment variable.
-call .\Data\python-3.7.3.exe
+call .\python-3.7.3.exe
 
 echo.
 echo.
