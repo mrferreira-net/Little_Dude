@@ -99,9 +99,12 @@ def reset():
     font_size = 40
     text_font = pygame.font.SysFont('arial', font_size)
     floor_num = floor_Index + 1
-    text = text_font.render("Floor " + str(floor_num) + "                                High Score: " + str(highscore), True, (255, 255, 255))
+    text = text_font.render("Floor: " + str(floor_num), True, (255, 255, 255))
+    text2 = text_font.render("High Score: " + str(highscore), True, (255, 255, 255))
     text_rect = text.get_rect()
     text_rect.topleft = (10, 0)
+    text_rect2 = text2.get_rect()
+    text_rect2.topright = (WIDTH - 10, 0)
 
 # Function to move fire guy to a new platform
 def fire_guy_target_platform():
@@ -175,7 +178,7 @@ def initiate_vars():
     global smoke_sound, running, fire_guy_dead
     global background_image, dead_image, ball_image
     global lava_image, littleDude_image, text, text_rect, littleDude_left_image
-    global platform_image, base_platform_image, highscore
+    global platform_image, base_platform_image, highscore, text2, text_rect2
 
     running = True
 
@@ -271,9 +274,12 @@ def initiate_vars():
     font_size = 40
     text_font = pygame.font.SysFont('arial', font_size)
     floor_num = floor_Index + 1
-    text = text_font.render("Floor " + str(floor_num) + "                                High Score: " + str(highscore), True, (255, 255, 255))
+    text = text_font.render("Floor: " + str(floor_num), True, (255, 255, 255))
+    text2 = text_font.render("High Score: " + str(highscore), True, (255, 255, 255))
     text_rect = text.get_rect()
     text_rect.topleft = (10, 0)
+    text_rect2 = text2.get_rect()
+    text_rect2.topright = (WIDTH - 10, 0)
 
 ### Draw everything on the screen
 def render_display():
@@ -286,6 +292,7 @@ def render_display():
     
     # Draw floor number
     screen.blit(text, text_rect)
+    screen.blit(text2, text_rect2)
 
     # Draw lava
     screen.blit(lava_image, (0, HEIGHT - 6))
@@ -414,9 +421,12 @@ while running:
         font_size = 40
         text_font = pygame.font.SysFont('arial', font_size)
         floor_num = floor_Index + 1
-        text = text_font.render("Floor " + str(floor_num) + "                                High Score: " + str(highscore), True, (255, 255, 255))
+        text = text_font.render("Floor: " + str(floor_num), True, (255, 255, 255))
+        text2 = text_font.render("High Score: " + str(highscore), True, (255, 255, 255))
         text_rect = text.get_rect()
         text_rect.topleft = (10, 0)
+        text_rect2 = text2.get_rect()
+        text_rect2.topright = (WIDTH - 10, 0)
 
         # Centers platform on player
         floor_platform = floors[floor_Index].platforms[0]
