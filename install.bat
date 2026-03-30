@@ -8,7 +8,7 @@ call .\python-3.7.3.exe
 echo.
 echo.
 
-echo Installing required Python packages in a virtual environment
+echo Installing required Python packages
 py -3.7 -m pip install pygame-ce
 py -3.7 -m pip install numpy
 
