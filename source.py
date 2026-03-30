@@ -2,6 +2,8 @@ import pygame
 import sys
 import random
 import numpy as np
+from pathlib import Path
+script_dir = Path(__file__).resolve().parent
 
 # Initialize pygame
 pygame.init()
@@ -12,7 +14,7 @@ joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_coun
 # Initualize mixer for sounds
 pygame.mixer.pre_init(frequency=48000, buffer=2048)
 pygame.mixer.init()
-pygame.mixer.music.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sounds/Littledude_music.wav")
+pygame.mixer.music.load(script_dir / "Data/Sounds/Littledude_music.wav")
 pygame.mixer.music.set_volume(0.3)
 pygame.mixer.music.play(-1)
 
@@ -176,25 +178,26 @@ def initiate_vars():
     global platform_image, base_platform_image, highscore
 
     running = True
-    base_platform_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/base_platform.png").convert_alpha()
-    platform_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/platform.png").convert_alpha()
-    background_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/background.png").convert_alpha()
-    dead_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/dead.png").convert_alpha()
-    lava_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/lava.png").convert_alpha()
-    littleDude_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/little_dude.png").convert_alpha()
+
+    base_platform_image = pygame.image.load(script_dir / "Data/Sprites/base_platform.png").convert_alpha()
+    platform_image = pygame.image.load(script_dir / "Data/Sprites/platform.png").convert_alpha()
+    background_image = pygame.image.load(script_dir / "Data/Sprites/background.png").convert_alpha()
+    dead_image = pygame.image.load(script_dir / "Data/Sprites/dead.png").convert_alpha()
+    lava_image = pygame.image.load(script_dir / "Data/Sprites/lava.png").convert_alpha()
+    littleDude_image = pygame.image.load(script_dir / "Data/Sprites/little_dude.png").convert_alpha()
     littleDude_left_image = pygame.transform.flip(littleDude_image, True, False)
 
-    jump_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sounds/jump.wav")
+    jump_sound = pygame.mixer.Sound(script_dir / "Data/Sounds/jump.wav")
     jump_sound.set_volume(0.2)
-    explosion_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sounds/explosion.wav")
-    fire_jump_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sounds/fire_jump.wav")
-    powerUp_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sounds/powerUp.wav")
-    fire_explosion_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sounds/fire_explosion.wav")
-    smoke_sound = pygame.mixer.Sound("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sounds/smoke.wav")
+    explosion_sound = pygame.mixer.Sound(script_dir / "Data/Sounds/explosion.wav")
+    fire_jump_sound = pygame.mixer.Sound(script_dir / "Data/Sounds/fire_jump.wav")
+    powerUp_sound = pygame.mixer.Sound(script_dir / "Data/Sounds/powerUp.wav")
+    fire_explosion_sound = pygame.mixer.Sound(script_dir / "Data/Sounds/fire_explosion.wav")
+    smoke_sound = pygame.mixer.Sound(script_dir / "Data/Sounds/smoke.wav")
 
     fire_guy = sprite()
     fire_guy.x, fire_guy.y, fire_guy.speed = -100, -100, 0.3
-    fire_guy.image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/fire_guy_s.png").convert_alpha()
+    fire_guy.image = pygame.image.load(script_dir / "Data/Sprites/fire_guy_s.png").convert_alpha()
     fire_guy_dead = 0
 
     little_dude = sprite()
@@ -204,13 +207,13 @@ def initiate_vars():
     little_dude.image = littleDude_image
 
     smoke = sprite()
-    smoke.image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/smoke.png").convert_alpha()
+    smoke.image = pygame.image.load(script_dir / "Data/Sprites/smoke.png").convert_alpha()
 
     bolt = sprite()
     bolt.width, bolt.height, bolt.size = 10, 15, None
-    bolt.image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/bolt.png").convert_alpha()
+    bolt.image = pygame.image.load(script_dir / "Data/Sprites/bolt.png").convert_alpha()
 
-    ball_image = pygame.image.load("/home/pi/RetroPie/roms/ports/Little_Dude/Data/Sprites/ball.png").convert_alpha()
+    ball_image = pygame.image.load(script_dir / "Data/Sprites/ball.png").convert_alpha()
     balls = []
 
     numOfPoints = int(100*(1/fire_guy.speed))
@@ -255,7 +258,8 @@ def initiate_vars():
             last_x = x
         floors.append(new_floor)
     floor_Index = 0
-    highscore = floor_Index
+    with open(script_dir / "Data/highscore.txt", "r") as f:
+        highscore = int(f.readline().strip().split(": ")[1])
     little_dude.last_Platform = floors[0].platforms[0]
     little_dude.current_Platform = floors[0].platforms[0]
     little_dude.y = floors[0].platforms[0].y - little_dude.size
@@ -405,7 +409,7 @@ while running:
 
         # Render floor number text
         highscore = floor_Index if floor_Index > highscore else highscore
-        with open("/home/pi/RetroPie/roms/ports/Little_Dude/Data/highscore.txt", "w") as f:
+        with open(script_dir / "Data/highscore.txt", "w") as f:
             f.write(f"Highscore: {highscore}\n")
         font_size = 40
         text_font = pygame.font.SysFont('arial', font_size)
