@@ -1,3 +1,2 @@
 @echo off
-call .venv\Scripts\activate.bat
-python source.py
+py -3.7 source.py
