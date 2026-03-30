@@ -1,2 +1,3 @@
 @echo off
+echo Please wait for game to launch...
 py -3.7 source.py
