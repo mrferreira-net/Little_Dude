@@ -11,8 +11,8 @@ echo.
 echo Installing required Python packages in a virtual environment
 python3 -m venv .venv
 call .venv\Scripts\activate.bat
-py -3.7 -m pip install pygame-ce
-py -3.7 -m pip install numpy
+python3 -m pip install pygame-ce
+python3 -m pip install numpy
 
 echo.
 echo.
