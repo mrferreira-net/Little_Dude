@@ -345,7 +345,7 @@ def render_display():
     pygame.display.flip()
 
     # Cap FPS
-    clock.tick(60)
+    clock.tick(30)
 
 ### Main game loop
 initiate_vars()
